@@ -5,7 +5,7 @@ FROM rust:latest as builder
 WORKDIR /usr/src/app
 
 # Copy the Cargo files for dependency resolution
-COPY Cargo.toml Cargo.lock ./
+COPY Cargo.toml ./
 
 # Build the dependencies separately to cache them
 RUN mkdir src && \
