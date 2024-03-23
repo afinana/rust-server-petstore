@@ -3,7 +3,7 @@
 use actix_web::{web, App, HttpServer};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
-
+use env_logger;
 mod db;
 mod handlers;
 mod petmodel;
@@ -23,8 +23,10 @@ async fn main() -> std::io::Result<()> {
     // add logging
     std::env::set_var("RUST_LOG", "actix_web=info");
     // Initialize logger
-    env_logger::init();
-
+    env_logger::Builder::new()
+       .filter_level(log::LevelFilter::Debug)
+      .init();
+   
 
 
     // Initialize Redis connection
@@ -47,10 +49,9 @@ async fn main() -> std::io::Result<()> {
             .route("/pet", web::post().to(handlers::add_pet))
             .route("/pet/{id}", web::get().to(handlers::get_pet))
             .route("/pet/{id}", web::delete().to(handlers::delete_pet))
-            .route("/pet/name/{name}", web::get().to(handlers::get_pet_by_name))
-            .route("/pet/category/{category}", web::get().to(handlers::get_pet_by_category))
-            .route("/pet/status/{status}", web::get().to(handlers::get_pet_by_status))            
-            .route("/pet/tag/{tag}", web::get().to(handlers::get_pet_by_tag))
+            .route("/pet/name/{name}", web::get().to(handlers::get_pet_by_name))          
+            .route("/pet/findByStatus", web::get().to(handlers::find_pet_by_status))            
+            .route("/pet/findByTags", web::get().to(handlers::get_pet_by_tag))
 
 
     })

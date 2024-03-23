@@ -63,22 +63,10 @@ impl RedisDb {
 			None => Ok(None),
 		}
 	}
-    // search pet by category
-    pub fn get_pet_by_category(&mut self, category: &str) -> redis::RedisResult<Vec<Pet>> {
-        let id: Option<u64> = self.client.hget("pet_categories", category)?;
-        match id {
-			Some(id) => {
-				let pet = self.get_pet_by_id(id)?;
-				match pet {
-					Some(pet) => Ok(vec![pet]),
-					None => Ok(vec![]),
-				}
-			}
-			None => Ok(vec![]),
-		}
-        }
+   
 	// search pet by status
-	pub fn get_pet_by_status(&mut self, status: &str) -> redis::RedisResult<Vec<Pet>> {
+    pub fn get_pets_by_status(&mut self, status: &str) -> redis::RedisResult<Vec<Pet>> {
+     
 		let id: Option<u64> = self.client.hget("pet_statuses", status)?;
 		match id {
 			Some(id) => {
@@ -92,7 +80,7 @@ impl RedisDb {
 		}
 	}
     // search pet by tag
-    pub fn get_pet_by_tag(&mut self, tag: &str) -> redis::RedisResult<Vec<Pet>> {
+    pub fn get_pet_by_tags(&mut self, tag: &str) -> redis::RedisResult<Vec<Pet>> {
         let id: Option<u64> = self.client.hget("pet_tags", tag)?;
         match id {
             Some(id) => {
