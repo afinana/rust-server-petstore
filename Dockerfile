@@ -22,7 +22,8 @@ COPY src/ ./src/
 RUN cargo build --release
 
 # Use a smaller base image for the final release image
-FROM debian:buster-slim
+# FROM debian:buster-slim
+FROM gcr.io/distroless/cc-debian12
 
 # Set the working directory inside the container
 WORKDIR /usr/src/app
