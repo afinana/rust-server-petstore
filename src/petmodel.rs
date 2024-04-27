@@ -29,16 +29,3 @@ pub struct Tag {
 	pub name: String
 }
 
-// functions to create new instances of structs
-impl Pet {
-	pub fn new(id: u64, category: Category, name: String) -> Self {
-		Pet {
-			id,
-			category,		
-			name,
-			photo_urls: None,
-			status: None,
-			tags: None
-		}
-	}
-}
