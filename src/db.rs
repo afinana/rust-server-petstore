@@ -8,11 +8,7 @@ pub struct RedisDb {
 }
 
 impl RedisDb {
-    pub fn new(redis_url: &str) -> redis::RedisResult<Self> {
-        let client = redis::Client::open(redis_url)?.get_connection()?;
-        Ok(RedisDb { client })
-    }
-    
+
 
     pub fn add_pet(&mut self, pet: &Pet) -> redis::RedisResult<()> {
         let pet_json = serde_json::to_string(pet).unwrap();
@@ -102,21 +98,7 @@ impl RedisDb {
 	  }
       Ok(pets)
 	}
-	// search pet by category
-	pub fn get_pets_by_category(&mut self, category: &str) -> redis::RedisResult<Vec<Pet>> {
-		let id: Option<u64> = self.client.hget("pet_categories", category)?;
-		match id {
-			Some(id) => {
-				let pet = self.get_pet_by_id(id)?;
-				match pet {
-					Some(pet) => Ok(vec![pet]),
-					None => Ok(vec![]),
-				}
-			}
-			None => Ok(vec![]),
-		}
-      
-	}
+	
     // search pet by tag
     pub fn get_pet_by_tags(&mut self, tag: &str) -> redis::RedisResult<Vec<Pet>> {
         

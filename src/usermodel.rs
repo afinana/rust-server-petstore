@@ -8,14 +8,3 @@ pub struct User {
 	pub email: String,
 	pub password: String,
 }
-// add new function to create new instance of User
-impl User {
-	pub fn new(id: u64, username: String, email: String, password: String) -> Self {
-		User {
-			id,
-			username,
-			email,
-			password
-		}
-	}
-}
