@@ -104,10 +104,7 @@ pub async fn get_pet_by_name(data: web::Data<Mutex<RedisDb>>, path: web::Path<St
 	}
 }
 
-
-
-
-// Search by status and log error and success message
+// Search by status query parameter and log error and success message
 pub async fn find_pet_by_status(data: web::Data<Mutex<RedisDb>>, query: web::Query<StatusQuery>) -> impl Responder {
 	// log request
 	log::info!("Received request for pet with status  {:?}", query);
@@ -126,6 +123,8 @@ pub async fn find_pet_by_status(data: web::Data<Mutex<RedisDb>>, query: web::Que
 		},
 	}
 }
+
+
 
 // Search by tags query parameter and log error and success message
 pub async fn get_pet_by_tag(data: web::Data<Mutex<RedisDb>>, query: web::Query<TagsQuery>) -> impl Responder {

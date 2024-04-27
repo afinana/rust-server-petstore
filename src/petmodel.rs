@@ -20,7 +20,9 @@ pub struct Pet {
 pub struct Category {
     pub	id: u64,
 	pub	name: String
-}   
+}
+
+impl Category {}   
 #[derive(Debug, Serialize, Deserialize, Clone)] // Added `Clone` trait derivation
 pub struct Tag {
 	pub id: u64,
