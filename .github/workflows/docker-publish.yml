@@ -54,8 +54,7 @@ jobs:
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
-        with:
-          context: .          
+        with:          
           images: name/app
         
       # Build and push Docker image with Buildx (don't push on PR)
