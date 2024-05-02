@@ -40,7 +40,10 @@ impl MongoDb {
 	// let filter = doc! { "_id": id.into() };
 	// get pet by id from the collection
 	pub async fn get_pet_by_id(&self, id: &str) -> Option<Pet> {
-		let filter = doc! { "id": id};
+
+		// create a filter convert id to i64
+		let filter = doc! { "id": id.parse::<i64>().unwrap() };
+
 		// find one pet by id and convert to pet struct
 		let pet = self.pet_collection.find_one(filter, None).await.unwrap();
 		match pet {
@@ -113,14 +116,16 @@ impl MongoDb {
 	}
 	// delete a pey by id from the collection
 	pub async fn delete_pet_by_id(&self, id: &str) -> Result<DeleteResult, Error> {
-		let filter = doc! { "id": id};
+		// create a filter convert id to i64
+		let filter = doc! { "id": id.parse::<i64>().unwrap() };
 		self.pet_collection.delete_one(filter, None).await
 	}
 	
 	
 	// update a pet by id from the collection 
 	pub async fn update_pet_by_id(&self, id: &str, pet: &Pet) -> Result<UpdateResult, Error> {
-		let filter = doc! { "id": id};
+		// create a filter convert id to i64
+		let filter = doc! { "id": id.parse::<i64>().unwrap() };
 		let pet_bson = to_bson(pet).unwrap(); // Replace `unwrap` with proper error handling.
  
 		let update = doc! { "$set": pet_bson};			
