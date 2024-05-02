@@ -41,8 +41,8 @@ async fn main() -> std::io::Result<()> {
 
     // create mongodb instance using cliente db and collection
     let mongo_db = db::MongoDb {
-        client: client,
-        db: db,
+        client,
+        db,
         pet_collection: pets,
         user_collection: users,
     };
