@@ -1,126 +1,135 @@
 // db.rs
+// change all methods using mongodb instead of redis
 
-use redis::Commands;
 use crate::petmodel::Pet;
+use crate::usermodel::User;
 
-pub struct RedisDb {
-   pub client: redis::Connection,
+use futures::StreamExt;
+use mongodb::{
+    bson::{doc, to_bson }, 
+	error::Error, 
+	results::{DeleteResult, InsertOneResult, UpdateResult}, 
+	Collection,
+	Database
+
+};
+
+pub struct MongoDb {
+	pub client: mongodb::Client,
+	pub db: Database,
+	pub pet_collection: Collection<Pet>,
+	pub user_collection: Collection<User>,
 }
 
-impl RedisDb {
+impl MongoDb {
 
-
-    pub fn add_pet(&mut self, pet: &Pet) -> redis::RedisResult<()> {
-        let pet_json = serde_json::to_string(pet).unwrap();
-        let _: () = self.client.hset("pets", pet.id, pet_json)?;
-        // save pet name indexed by name
-        let _: () = self.client.hset("pet_names", pet.name.clone(), pet.id)?;
-        // save  pet category indexed by category name
-        let _: () = self.client.hset("pet_categories", pet.category.name.clone(), pet.id)?;
-
-        
-        // save pet status indexed by status
-        let _: () = self.client.hset("pet_statuses", pet.status.clone().unwrap_or("".to_string()), pet.id)?;
-
-        // save pet tags indexed by tag name
-        if let Some(tags) = &pet.tags {
-			for tag in tags {
-				let _: () = self.client.hset("pet_tags", tag.name.clone(), pet.id)?;
-			}
-		}
-
-		Ok(())
-     
-    }
-
-    pub fn get_pets(&mut self) -> redis::RedisResult<Vec<Pet>> {
-        let pet_map: std::collections::HashMap<String, String> = self.client.hgetall("pets")?;
-        let pets: Vec<Pet> = pet_map.values().map(|json| serde_json::from_str(json).unwrap()).collect();
-        Ok(pets)
-    }
-
-    pub fn get_pet_by_id(&mut self, id: u64) -> redis::RedisResult<Option<Pet>> {
-        let pet_json: Option<String> = self.client.hget("pets", id)?;
-        let pet: Option<Pet> = match pet_json {
-            Some(json) => Some(serde_json::from_str(&json).unwrap()),
-            None => None,
-        };
-        Ok(pet)
-    }
-
-    pub fn delete_pet(&mut self, id: u64) -> redis::RedisResult<()> {
-
-        let _: () = self.client.hdel("pets", id)?;
-        // remove pet name indexed by name
-        let pet: Option<Pet> = self.get_pet_by_id(id)?;
-        if let Some(pet) = pet {
-			let _: () = self.client.hdel("pet_names", pet.name)?;
-			// remove pet category indexed by category name
-			let _: () = self.client.hdel("pet_categories", pet.category.name)?;
-			// remove pet status indexed by status
-			let _: () = self.client.hdel("pet_statuses", pet.status.unwrap_or("".to_string()))?;
-			// remove pet tags indexed by tag name
-			if let Some(tags) = pet.tags {
-				for tag in tags {
-					let _: () = self.client.hdel("pet_tags", tag.name)?;
+	// get all pets from the collection
+	pub async fn get_all_pets(&self) -> Result<Vec<Pet>, Error> {
+		let mut cursor = self.pet_collection.find(None, None).await?;
+		let mut pets: Vec<Pet> = vec![];
+		while let Some(result) = cursor.next().await {
+			match result {
+				Ok(document) => {					
+					pets.push(document);
 				}
-			}
-		}
-
-        Ok(())
-    }
-    // search pet by name
-    pub fn get_pet_by_name(&mut self, name: &str) -> redis::RedisResult<Option<Pet>> {
-		let id: Option<u64> = self.client.hget("pet_names", name)?;
-		match id {
-			Some(id) => self.get_pet_by_id(id),
-			None => Ok(None),
-		}
-	}
-   
-	// search pet by status
-    pub fn get_pets_by_status(&mut self, status: &str) -> redis::RedisResult<Vec<Pet>> {
-      // parse a string of elements sparated by comma
-      let status: Vec<&str> = status.split(',').collect();
-      let mut pets: Vec<Pet> = vec![];
-      for s in status {
-		  let id: Option<u64> = self.client.hget("pet_statuses", s)?;
-		  match id {
-			  Some(id) => {
-				  let pet = self.get_pet_by_id(id)?;
-				  match pet {
-					  Some(pet) => pets.push(pet),
-					  None => (),
-				  }
-			  }
-			  None => (),
-		  }
-	  }
-      Ok(pets)
-	}
-	
-    // search pet by tag
-    pub fn get_pet_by_tags(&mut self, tag: &str) -> redis::RedisResult<Vec<Pet>> {
-        
-        // parse a string of elements sparated by comma
-        let tag: Vec<&str> = tag.split(',').collect();
-        let mut pets: Vec<Pet> = vec![];
-        for t in tag {
-			let id: Option<u64> = self.client.hget("pet_tags", t)?;
-			match id {
-				Some(id) => {
-					let pet = self.get_pet_by_id(id)?;
-					match pet {
-						Some(pet) => pets.push(pet),
-						None => (),
-					}
-				}
-				None => (),
+				Err(e) => return Err(e),
 			}
 		}
 		Ok(pets)
-    }
-    
-    
+	}
+	// let filter = doc! { "_id": id.into() };
+	// get pet by id from the collection
+	pub async fn get_pet_by_id(&self, id: &str) -> Option<Pet> {
+		let filter = doc! { "id": id};
+		// find one pet by id and convert to pet struct
+		let pet = self.pet_collection.find_one(filter, None).await.unwrap();
+		match pet {
+			Some(pet) => Some(pet),
+			None => None,
+		}
+		
+	}
+	// get all pets by name
+	pub async fn get_pets_by_name(&self, name: &str) -> Result<Vec<Pet>, Error> {
+		let filter = doc! { "name": name };
+		let mut cursor = self.pet_collection.find(filter, None).await?;
+		let mut pets: Vec<Pet> = vec![];
+		while let Some(result) = cursor.next().await {
+			match result {
+				Ok(document) => {					
+					pets.push(document);
+				}
+				Err(e) => return Err(e),
+			}
+		}
+		Ok(pets)
+	}
+	
+	// add pet to the collection
+	pub async fn add_pet(&self, pet: &Pet) -> Result<InsertOneResult, Error> {		
+		self.pet_collection.insert_one(pet, None).await
+	}
+	// update pet in the collection
+	pub async fn update_pet(&self, pet: &Pet) -> Result<UpdateResult, Error> {
+		let filter = doc! { "id": pet.id as i64};
+		let pet_bson = to_bson(pet).unwrap(); // Replace `unwrap` with proper error handling.
+ 
+		let update = doc! { "$set": pet_bson};			
+		self.pet_collection.update_one(filter, update, None).await
+	}
 
+
+	// search pet by tag from the collection
+	pub async fn get_pets_by_tag(&self, tag: &str) -> Result<Vec<Pet>, Error> {
+		let filter = doc! { "tags.name": tag };
+		let mut cursor = self.pet_collection.find(filter, None).await?;
+		let mut pets: Vec<Pet> = vec![];
+		while let Some(result) = cursor.next().await {
+			match result {
+				Ok(document) => {					
+					pets.push(document);
+				}
+				Err(e) => return Err(e),
+			}
+		}
+		
+		Ok(pets)
+	}
+
+	// search pet by status from the collection
+	pub async fn get_pets_by_status(&self, status: &str) -> Result<Vec<Pet>, Error> {
+		let filter = doc! { "status": status };
+		let mut cursor = self.pet_collection.find(filter, None).await?;
+		let mut pets: Vec<Pet> = vec![];
+		while let Some(result) = cursor.next().await {
+			match result {
+				Ok(document) => {					
+					pets.push(document);
+				}
+				Err(e) => return Err(e),
+			}
+		}
+		Ok(pets) 
+	}
+	// delete a pey by id from the collection
+	pub async fn delete_pet_by_id(&self, id: &str) -> Result<DeleteResult, Error> {
+		let filter = doc! { "id": id};
+		self.pet_collection.delete_one(filter, None).await
+	}
+	
+	
+	// update a pet by id from the collection 
+	pub async fn update_pet_by_id(&self, id: &str, pet: &Pet) -> Result<UpdateResult, Error> {
+		let filter = doc! { "id": id};
+		let pet_bson = to_bson(pet).unwrap(); // Replace `unwrap` with proper error handling.
+ 
+		let update = doc! { "$set": pet_bson};			
+		self.pet_collection.update_one(filter, update, None).await
+
+	}
+		
+
+
+	
 }
+
