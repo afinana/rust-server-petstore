@@ -84,35 +84,55 @@ impl MongoDb {
 
 	// search pet by tag from the collection
 	pub async fn get_pets_by_tag(&self, tag: &str) -> Result<Vec<Pet>, Error> {
-		let filter = doc! { "tags.name": tag };
-		let mut cursor = self.pet_collection.find(filter, None).await?;
-		let mut pets: Vec<Pet> = vec![];
-		while let Some(result) = cursor.next().await {
-			match result {
-				Ok(document) => {					
-					pets.push(document);
-				}
-				Err(e) => return Err(e),
-			}
-		}
-		
-		Ok(pets)
+
+	   // split tag by comma
+	   let tags: Vec<&str> = tag.split(",").collect();
+	   // for each tag create a filter with elemMatch
+	   let mut filters = vec![];
+	   for tag in tags {
+		   let filter = doc! { "tags": { "$elemMatch": { "name": tag } } };
+		   filters.push(filter);
+	   }
+	   // create a filter with or operator
+	   let filter = doc! { "$or": filters };
+	   let mut cursor = self.pet_collection.find(filter, None).await?;
+	   let mut pets: Vec<Pet> = vec![];
+	   while let Some(result) = cursor.next().await {
+			   match result {
+				   Ok(document) => {					
+					   pets.push(document);
+				   }
+				   Err(e) => return Err(e),
+			   }
+	   }
+	   Ok(pets)
 	}
+	
 
 	// search pet by status from the collection
 	pub async fn get_pets_by_status(&self, status: &str) -> Result<Vec<Pet>, Error> {
-		let filter = doc! { "status": status };
-		let mut cursor = self.pet_collection.find(filter, None).await?;
-		let mut pets: Vec<Pet> = vec![];
-		while let Some(result) = cursor.next().await {
-			match result {
-				Ok(document) => {					
-					pets.push(document);
-				}
-				Err(e) => return Err(e),
-			}
-		}
-		Ok(pets) 
+		
+	   // split tag by comma
+	   let status_v: Vec<&str> = status.split(",").collect();
+	   // for each tag create a filter with elemMatch
+	   let mut filters = vec![];
+	   for status in status_v {
+		   let filter = doc! { "status": status };
+		   filters.push(filter);
+	   }
+	   // create a filter with or operator
+	   let filter = doc! { "$or": filters };
+	   let mut cursor = self.pet_collection.find(filter, None).await?;
+	   let mut pets: Vec<Pet> = vec![];
+	   while let Some(result) = cursor.next().await {
+			   match result {
+				   Ok(document) => {					
+					   pets.push(document);
+				   }
+				   Err(e) => return Err(e),
+			   }
+	   }
+	   Ok(pets)
 	}
 	// delete a pey by id from the collection
 	pub async fn delete_pet_by_id(&self, id: &str) -> Result<DeleteResult, Error> {

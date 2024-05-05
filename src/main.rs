@@ -55,21 +55,20 @@ async fn main() -> std::io::Result<()> {
      log::info!("Starting server at {} ",&server_addr);
      log::info!("Connecting to MongoDB at {}", &mongo_url);
     
-    // Start HTTP server using the mongo_db as shared state
-
+    // Start HTTP server using the mongo_db as shared state and prefix /v2 to all routes   
+    
     HttpServer::new(move || {
         App::new()
             .app_data(mongo_db.clone()) // Clone the web::Data containing RedisDb
-            .route("/pet", web::get().to(handlers::index))
-            .route("/pet", web::post().to(handlers::add_pet))
-            .route("/pet", web::put().to(handlers::update_pet))
-            .route("/pet/findByStatus", web::get().to(handlers::find_pet_by_status))            
-            .route("/pet/findByTags", web::get().to(handlers::get_pet_by_tag))            
-            .route("/pet/{id}", web::get().to(handlers::get_pet))
-            .route("/pet/{id}", web::put().to(handlers::update_pet_by_id))         
-            .route("/pet/{id}", web::delete().to(handlers::delete_pet))
-            .route("/pet/name/{name}", web::get().to(handlers::get_pet_by_name))          
-
+            .route("/v2/pet", web::get().to(handlers::index))
+            .route("/v2/pet", web::post().to(handlers::add_pet))
+            .route("/v2/pet", web::put().to(handlers::update_pet))
+            .route("/v2/pet/findByStatus", web::get().to(handlers::find_pet_by_status))            
+            .route("/v2/pet/findByTags", web::get().to(handlers::get_pet_by_tag))            
+            .route("/v2/pet/{id}", web::get().to(handlers::get_pet))
+            .route("/v2/pet/{id}", web::put().to(handlers::update_pet_by_id))         
+            .route("/v2/pet/{id}", web::delete().to(handlers::delete_pet))
+            .route("/v2/pet/name/{name}", web::get().to(handlers::get_pet_by_name))
 
 
     })
