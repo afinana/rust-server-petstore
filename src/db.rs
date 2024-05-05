@@ -40,7 +40,10 @@ impl MongoDb {
 	// let filter = doc! { "_id": id.into() };
 	// get pet by id from the collection
 	pub async fn get_pet_by_id(&self, id: &str) -> Option<Pet> {
-		let filter = doc! { "id": id};
+
+		// create a filter convert id to i64
+		let filter = doc! { "id": id.parse::<i64>().unwrap() };
+
 		// find one pet by id and convert to pet struct
 		let pet = self.pet_collection.find_one(filter, None).await.unwrap();
 		match pet {
@@ -81,46 +84,68 @@ impl MongoDb {
 
 	// search pet by tag from the collection
 	pub async fn get_pets_by_tag(&self, tag: &str) -> Result<Vec<Pet>, Error> {
-		let filter = doc! { "tags.name": tag };
-		let mut cursor = self.pet_collection.find(filter, None).await?;
-		let mut pets: Vec<Pet> = vec![];
-		while let Some(result) = cursor.next().await {
-			match result {
-				Ok(document) => {					
-					pets.push(document);
-				}
-				Err(e) => return Err(e),
-			}
-		}
-		
-		Ok(pets)
+
+	   // split tag by comma
+	   let tags: Vec<&str> = tag.split(",").collect();
+	   // for each tag create a filter with elemMatch
+	   let mut filters = vec![];
+	   for tag in tags {
+		   let filter = doc! { "tags": { "$elemMatch": { "name": tag } } };
+		   filters.push(filter);
+	   }
+	   // create a filter with or operator
+	   let filter = doc! { "$or": filters };
+	   let mut cursor = self.pet_collection.find(filter, None).await?;
+	   let mut pets: Vec<Pet> = vec![];
+	   while let Some(result) = cursor.next().await {
+			   match result {
+				   Ok(document) => {					
+					   pets.push(document);
+				   }
+				   Err(e) => return Err(e),
+			   }
+	   }
+	   Ok(pets)
 	}
+	
 
 	// search pet by status from the collection
 	pub async fn get_pets_by_status(&self, status: &str) -> Result<Vec<Pet>, Error> {
-		let filter = doc! { "status": status };
-		let mut cursor = self.pet_collection.find(filter, None).await?;
-		let mut pets: Vec<Pet> = vec![];
-		while let Some(result) = cursor.next().await {
-			match result {
-				Ok(document) => {					
-					pets.push(document);
-				}
-				Err(e) => return Err(e),
-			}
-		}
-		Ok(pets) 
+		
+	   // split tag by comma
+	   let status_v: Vec<&str> = status.split(",").collect();
+	   // for each tag create a filter with elemMatch
+	   let mut filters = vec![];
+	   for status in status_v {
+		   let filter = doc! { "status": status };
+		   filters.push(filter);
+	   }
+	   // create a filter with or operator
+	   let filter = doc! { "$or": filters };
+	   let mut cursor = self.pet_collection.find(filter, None).await?;
+	   let mut pets: Vec<Pet> = vec![];
+	   while let Some(result) = cursor.next().await {
+			   match result {
+				   Ok(document) => {					
+					   pets.push(document);
+				   }
+				   Err(e) => return Err(e),
+			   }
+	   }
+	   Ok(pets)
 	}
 	// delete a pey by id from the collection
 	pub async fn delete_pet_by_id(&self, id: &str) -> Result<DeleteResult, Error> {
-		let filter = doc! { "id": id};
+		// create a filter convert id to i64
+		let filter = doc! { "id": id.parse::<i64>().unwrap() };
 		self.pet_collection.delete_one(filter, None).await
 	}
 	
 	
 	// update a pet by id from the collection 
 	pub async fn update_pet_by_id(&self, id: &str, pet: &Pet) -> Result<UpdateResult, Error> {
-		let filter = doc! { "id": id};
+		// create a filter convert id to i64
+		let filter = doc! { "id": id.parse::<i64>().unwrap() };
 		let pet_bson = to_bson(pet).unwrap(); // Replace `unwrap` with proper error handling.
  
 		let update = doc! { "$set": pet_bson};			

@@ -141,7 +141,8 @@ pub async fn find_pet_by_status(mongo_db: web::Data<Mutex<db::MongoDb>>, query: 
 	let pets = mongo_db.get_pets_by_status(&query.status).await;
 	match pets {
 		Ok(pets) => {
-			log::info!("Found pets by status: {:?}", query.status);
+			// add log success message with number of pets found
+			log::info!("Found pets by status: {:?}", pets.len());
 			HttpResponse::Ok().json(pets)
 		}
 		Err(e) => {
@@ -162,7 +163,8 @@ pub async fn get_pet_by_tag(mongo_db: web::Data<Mutex<db::MongoDb>>, query: web:
 	let pets = mongo_db.get_pets_by_tag(&query.tags).await;
 	match pets {
 		Ok(pets) => {
-			log::info!("Found pets by tags: {:?}", query.tags);
+			// add log success message with number of pets found
+			log::info!("Found pets by tags: {:?}", pets.len());
 			HttpResponse::Ok().json(pets)
 		}
 		Err(e) => {
