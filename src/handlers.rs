@@ -44,6 +44,42 @@ pub async fn add_pet(data: web::Data<Mutex<RedisDb>>, new_pet: web::Json<Pet>) -
         },
     }
 }
+
+// update pet and log error message if failed
+pub async fn update_pet(data: web::Data<Mutex<RedisDb>>, new_pet: web::Json<Pet>) -> impl Responder {
+	// log request
+	log::info!("Received request to update pet {:?}", new_pet);
+
+	let mut redis_db = data.lock().unwrap();
+	match redis_db.update_pet(&new_pet) {
+		Ok(_) => {
+			log::info!("Successfully updated pet {:?}", new_pet);
+			HttpResponse::Ok().finish()
+		},
+		Err(fail) => {
+			log::error!("Failed to update pet {:?} , error: {:?}", new_pet, fail);
+			HttpResponse::InternalServerError().finish()
+		},
+	}
+}
+// update pet by id and log error message if not found
+pub async fn update_pet_by_id(data: web::Data<Mutex<RedisDb>>, path: web::Path<u64>, new_pet: web::Json<Pet>) -> impl Responder {
+	// log request
+	log::info!("Received request to update pet with id {} to {:?}", path, new_pet);
+
+	let mut redis_db = data.lock().unwrap();
+	match redis_db.update_pet_by_id(*path, &new_pet) {
+		Ok(_) => {
+			log::info!("Successfully updated pet with ID {} to {:?}", path, new_pet);
+			HttpResponse::Ok().finish()
+		},
+		Err(fail) => {
+			log::error!("Failed to update pet with ID {} to {:?} , error: {:?}", path, new_pet, fail);
+			HttpResponse::InternalServerError().finish()
+		},
+	}
+}
+
 // get pet by id and log error message if not found
 pub async fn get_pet(data: web::Data<Mutex<RedisDb>>, path: web::Path<u64>) -> impl Responder {
    // log request
