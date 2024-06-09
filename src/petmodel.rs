@@ -1,5 +1,6 @@
 // petmodel.rs
 
+use amqprs::channel::Channel;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)] // Added `Clone` trait derivation
@@ -28,4 +29,15 @@ pub struct Tag {
 	pub id: u64,
 	pub name: String
 }
+// create appdata struct to hold redis_db and channel
+pub struct AppData {
+	pub redis_db: web::Data<Mutex<db::RedisDb>>,
+	pub mq: web::Data<Mutex<RabbitMQ>>,
+}
 
+
+impl AppData {
+    pub fn new(redis_db: web::Data<Mutex<db::RedisDb>>, mq: web::Data<Mutex<RabbitMQ>>) -> Self {
+        AppData { redis_db, mq }
+    }
+}

@@ -1,17 +1,24 @@
 // handlers.rs
+// TODO complete with: https://github.com/gftea/amqprs/blob/main/examples/src/basic_pub_sub.rs
 
 use actix_web::{web, HttpResponse, Responder};
+
+
+
 use crate::petmodel::Pet;
-use crate::db::RedisDb;
+use crate::petmodel::AppData;
 use std::sync::Mutex;
 
-// index handler to get all pets and log error message if failed
-pub async fn index(data: web::Data<Mutex<RedisDb>>) -> impl Responder {
+
+
+// index handler to get all pets and log error message if failed using AppData
+pub async fn index(data: web::Data<Mutex<AppData>>) -> impl Responder {
 	// log request
 	log::info!("Received request for index");
 
-	// get RedisDb instance from shared data
-	let mut redis_db = data.lock().unwrap();
+	// get RedisDb instance from AppData
+	let redis_db = &data.lock().unwrap().redis_db;
+	
 	match redis_db.get_pets() {
 		Ok(pets) => {
 			// log pets
@@ -23,69 +30,20 @@ pub async fn index(data: web::Data<Mutex<RedisDb>>) -> impl Responder {
 		    HttpResponse::InternalServerError().finish()
 		}
 	}
-    
 
 }
-// add pet and log error message if failed
-pub async fn add_pet(data: web::Data<Mutex<RedisDb>>, new_pet: web::Json<Pet>) -> impl Responder {
-    
-   // log request
-   log::info!("Received request to add pet {:?}", new_pet);
+	
 
-   let mut redis_db = data.lock().unwrap();
-   match redis_db.add_pet(&new_pet) {
-        Ok(_) => {
-            log::info!("Successfully added pet {:?}", new_pet);
-            HttpResponse::Created().finish()
-        },
-        Err(fail) => {
-            log::error!("Failed to add pet {:?} , error: {:?}", new_pet, fail);
-            HttpResponse::InternalServerError().finish()
-        },
-    }
-}
-
-// update pet and log error message if failed
-pub async fn update_pet(data: web::Data<Mutex<RedisDb>>, new_pet: web::Json<Pet>) -> impl Responder {
-	// log request
-	log::info!("Received request to update pet {:?}", new_pet);
-
-	let mut redis_db = data.lock().unwrap();
-	match redis_db.update_pet(&new_pet) {
-		Ok(_) => {
-			log::info!("Successfully updated pet {:?}", new_pet);
-			HttpResponse::Ok().finish()
-		},
-		Err(fail) => {
-			log::error!("Failed to update pet {:?} , error: {:?}", new_pet, fail);
-			HttpResponse::InternalServerError().finish()
-		},
-	}
-}
-// update pet by id and log error message if not found
-pub async fn update_pet_by_id(data: web::Data<Mutex<RedisDb>>, path: web::Path<u64>, new_pet: web::Json<Pet>) -> impl Responder {
-	// log request
-	log::info!("Received request to update pet with id {} to {:?}", path, new_pet);
-
-	let mut redis_db = data.lock().unwrap();
-	match redis_db.update_pet_by_id(*path, &new_pet) {
-		Ok(_) => {
-			log::info!("Successfully updated pet with ID {} to {:?}", path, new_pet);
-			HttpResponse::Ok().finish()
-		},
-		Err(fail) => {
-			log::error!("Failed to update pet with ID {} to {:?} , error: {:?}", path, new_pet, fail);
-			HttpResponse::InternalServerError().finish()
-		},
-	}
-}
 
 // get pet by id and log error message if not found
-pub async fn get_pet(data: web::Data<Mutex<RedisDb>>, path: web::Path<u64>) -> impl Responder {
+pub async fn get_pet(data: web::Data<Mutex<AppData>>, path: web::Path<u64>) -> impl Responder {
    // log request
    log::info!("Received request for pet with id {}", path);
 
-   let mut redis_db = data.lock().unwrap();
+   // get RedisDb instance from AppData
+   let mut redis_db = data.lock().unwrap().redis_db;
+  
+   
    // show log error if pet not found
    match redis_db.get_pet_by_id(*path) {
         Ok(Some(pet)) => {
@@ -104,29 +62,20 @@ pub async fn get_pet(data: web::Data<Mutex<RedisDb>>, path: web::Path<u64>) -> i
 
   
 }
-// delete pet by id and log error message if not found
-pub async fn delete_pet(data: web::Data<Mutex<RedisDb>>, path: web::Path<u64>) -> impl Responder {
-	// log request
-	log::info!("Received request to delete pet with id {}", path);
-	
-    let mut redis_db = data.lock().unwrap();
-    match redis_db.delete_pet(*path) {
-        Ok(_) => {
-            log::info!("Successfully deleted pet with ID {}", *path);
-            HttpResponse::NoContent().finish()
-        },
-       Err(fail) => {
-            log::error!("Failed to delete pet with ID {}  , error:  {:?}", *path, fail);
-            HttpResponse::InternalServerError().finish()
-        },
-    }
-}
+
+
+
+
 // Search by name and log error message if not found
-pub async fn get_pet_by_name(data: web::Data<Mutex<RedisDb>>, path: web::Path<String>) -> impl Responder {
+pub async fn get_pet_by_name(data: web::Data<Mutex<AppData>>, path: web::Path<String>) -> impl Responder {
 	// log request
 	log::info!("Received request for pet with name {}", path);
 
-	let mut redis_db = data.lock().unwrap();
+	// get RedisDb instance from AppData
+	let mut redis_db = data.lock().unwrap().redis_db;
+
+	
+	
 	match redis_db.get_pet_by_name(&path) {
 		Ok(Some(pet)) => HttpResponse::Ok().json(pet),
 		Ok(None) => {
@@ -141,13 +90,14 @@ pub async fn get_pet_by_name(data: web::Data<Mutex<RedisDb>>, path: web::Path<St
 }
 
 // Search by status query parameter and log error and success message
-pub async fn find_pet_by_status(data: web::Data<Mutex<RedisDb>>, query: web::Query<StatusQuery>) -> impl Responder {
+pub async fn find_pet_by_status(data: web::Data<Mutex<AppData>>, query: web::Query<StatusQuery>) -> impl Responder {
 	// log request
 	log::info!("Received request for pet with status  {:?}", query);
 
-	let mut redis_db = data.lock().unwrap();
+	// get RedisDb instance from AppData
+	let mut redis_db = data.lock().unwrap().redis_db;
 	
-	
+		
 	match redis_db.get_pets_by_status(&query.status) {
 		Ok(pets) => {
 			log::info!("Successfully retrieved pets with status {:?}", query.status);
@@ -163,11 +113,13 @@ pub async fn find_pet_by_status(data: web::Data<Mutex<RedisDb>>, query: web::Que
 
 
 // Search by tags query parameter and log error and success message
-pub async fn get_pet_by_tag(data: web::Data<Mutex<RedisDb>>, query: web::Query<TagsQuery>) -> impl Responder {
+pub async fn get_pet_by_tag(data: web::Data<Mutex<AppData>>, query: web::Query<TagsQuery>) -> impl Responder {
 	// log request
 	log::info!("Received request for pet with tag  {:?}", query.tags);
 
-	let mut redis_db = data.lock().unwrap();
+	// get RedisDb instance from AppData
+	let mut redis_db = data.lock().unwrap().redis_db;
+	
 	match redis_db.get_pet_by_tags(&query.tags) {
 		Ok(pets) => {
 			log::info!("Successfully retrieved pets with tags {}", query.tags);
@@ -180,6 +132,95 @@ pub async fn get_pet_by_tag(data: web::Data<Mutex<RedisDb>>, query: web::Query<T
 	}
 }
 
+//--------------------------- UPDATE Methods ---------------------------------------------------
+// add pet and log error message if failed
+pub async fn add_pet(data: web::Data<Mutex<AppData>>, new_pet: web::Json<Pet>) -> impl Responder {
+    
+   // log request
+   log::info!("Received request to add pet {:?}", new_pet);
+   // get RabbitMQ instance from AppData
+   let mut mq = data.lock().unwrap().mq;
+   
+   // call add_pet and log error message if failed
+   match mq.add_pet(new_pet.into_inner()) {
+		Ok(_) => {
+			log::info!("Successfully added pet {:?}", new_pet);
+			HttpResponse::Ok().finish()
+		},
+		Err(fail) => {
+			log::error!("Failed to add pet {:?}, error: {:?}", new_pet, fail);
+			HttpResponse::InternalServerError().finish()
+		},
+	}
+   
+   
+}
+
+// update pet and log error message if failed
+pub async fn update_pet(data: web::Data<Mutex<AppData>>, new_pet: web::Json<Pet>) -> impl Responder {
+	// log request
+	log::info!("Received request to update pet {:?}", new_pet);
+
+	// get RabbitMQ instance from AppData
+	let mut mq = data.lock().unwrap().mq;
+
+	// call update_pet and log error message if failed
+	match mq.update_pet(new_pet.into_inner()) {
+		Ok(_) => {
+			log::info!("Successfully updated pet {:?}", new_pet);
+			HttpResponse::Ok().finish()
+		},
+		Err(fail) => {
+			log::error!("Failed to update pet {:?}, error: {:?}", new_pet, fail);
+			HttpResponse::InternalServerError().finish()
+		},
+	}	
+}
+
+// update pet by id and log error message if not found
+pub async fn update_pet_by_id(data: web::Data<Mutex<AppData>>, path: web::Path<u64>, new_pet: web::Json<Pet>) -> impl Responder {
+	// log request
+	log::info!("Received request to update pet with id {} to {:?}", path, new_pet);
+
+	// get RabbitMQ instance from AppData
+	let mut mq = data.lock().unwrap().mq;
+
+	// call update_pet_by_id and log error message if failed
+	match mq.update_pet_by_id(*path, new_pet.into_inner()) {
+		Ok(_) => {
+			log::info!("Successfully updated pet with id {} to {:?}", path, new_pet);
+			HttpResponse::Ok().finish()
+		},
+		Err(fail) => {
+			log::error!("Failed to update pet with id {} to {:?}, error: {:?}", path, new_pet, fail);
+			HttpResponse::InternalServerError().finish()
+		},
+	}
+	
+	
+}
+// delete pet by id and log error message if not found
+pub async fn delete_pet(data: web::Data<Mutex<AppData>>, path: web::Path<u64>) -> impl Responder {
+	// log request
+	log::info!("Received request to delete pet with id {}", path);
+
+	// get RabbitMQ instance from AppData
+	let mut mq = data.lock().unwrap().mq;
+
+	// call delete_pet and log error message if failed
+	match mq.delete_pet(*path) {
+		Ok(_) => {
+			log::info!("Successfully deleted pet with id {}", path);
+			HttpResponse::Ok().finish()
+		},
+		Err(fail) => {
+			log::error!("Failed to delete pet with id {}, error: {:?}", path, fail);
+			HttpResponse::InternalServerError().finish()
+		},
+	}
+	
+    
+}
 
 #[derive(Debug, serde::Deserialize)]
 pub struct StatusQuery {
