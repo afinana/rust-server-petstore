@@ -1,4 +1,4 @@
-// handlers.rs
+// pethandlers.rs
 
 use actix_web::{web, HttpResponse, Responder};
 use crate::petmodel::Pet;
@@ -6,7 +6,7 @@ use crate::db::RedisDb;
 use std::sync::Mutex;
 
 // index handler to get all pets and log error message if failed
-pub async fn index(data: web::Data<Mutex<RedisDb>>) -> impl Responder {
+pub async fn pet_index(data: web::Data<Mutex<RedisDb>>) -> impl Responder {
 	// log request
 	log::info!("Received request for index");
 
@@ -36,7 +36,7 @@ pub async fn add_pet(data: web::Data<Mutex<RedisDb>>, new_pet: web::Json<Pet>) -
    match redis_db.add_pet(&new_pet) {
         Ok(_) => {
             log::info!("Successfully added pet {:?}", new_pet);
-            HttpResponse::Created().finish()
+            HttpResponse::Created().json(new_pet.into_inner())
         },
         Err(fail) => {
             log::error!("Failed to add pet {:?} , error: {:?}", new_pet, fail);
@@ -54,7 +54,7 @@ pub async fn update_pet(data: web::Data<Mutex<RedisDb>>, new_pet: web::Json<Pet>
 	match redis_db.update_pet(&new_pet) {
 		Ok(_) => {
 			log::info!("Successfully updated pet {:?}", new_pet);
-			HttpResponse::Ok().finish()
+			HttpResponse::Created().json(new_pet.into_inner())
 		},
 		Err(fail) => {
 			log::error!("Failed to update pet {:?} , error: {:?}", new_pet, fail);
@@ -71,7 +71,7 @@ pub async fn update_pet_by_id(data: web::Data<Mutex<RedisDb>>, path: web::Path<u
 	match redis_db.update_pet_by_id(*path, &new_pet) {
 		Ok(_) => {
 			log::info!("Successfully updated pet with ID {} to {:?}", path, new_pet);
-			HttpResponse::Ok().finish()
+			HttpResponse::Created().json(new_pet.into_inner())
 		},
 		Err(fail) => {
 			log::error!("Failed to update pet with ID {} to {:?} , error: {:?}", path, new_pet, fail);
@@ -163,12 +163,12 @@ pub async fn find_pet_by_status(data: web::Data<Mutex<RedisDb>>, query: web::Que
 
 
 // Search by tags query parameter and log error and success message
-pub async fn get_pet_by_tag(data: web::Data<Mutex<RedisDb>>, query: web::Query<TagsQuery>) -> impl Responder {
+pub async fn find_pet_by_tag(data: web::Data<Mutex<RedisDb>>, query: web::Query<TagsQuery>) -> impl Responder {
 	// log request
 	log::info!("Received request for pet with tag  {:?}", query.tags);
 
 	let mut redis_db = data.lock().unwrap();
-	match redis_db.get_pet_by_tags(&query.tags) {
+	match redis_db.get_pets_by_tags(&query.tags) {
 		Ok(pets) => {
 			log::info!("Successfully retrieved pets with tags {}", query.tags);
 			HttpResponse::Ok().json(pets)

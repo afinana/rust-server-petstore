@@ -1,21 +1,15 @@
 // main.rs
 
 use actix_web::{web, App, HttpServer};
-use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use env_logger;
 mod db;
-mod handlers;
+mod pethandlers;
+mod userhandlers;
 mod petmodel;
 mod usermodel;
 
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Pet {
-    id: u64,
-    name: String,
-    category: String,
-}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -42,22 +36,29 @@ async fn main() -> std::io::Result<()> {
     log::info!("Starting server at {} ",&server_addr);
     
 
-
-
     // Start HTTP server
     HttpServer::new(move || {
         App::new()
             .app_data(redis_db.clone()) // Clone the web::Data containing RedisDb
-            .route("/v2/pet", web::get().to(handlers::index))
-            .route("/v2/pet", web::post().to(handlers::add_pet))
-            .route("/v2/pet", web::put().to(handlers::update_pet))
-            .route("/v2/pet/findByStatus", web::get().to(handlers::find_pet_by_status))            
-            .route("/v2/pet/findByTags", web::get().to(handlers::get_pet_by_tag))            
-            .route("/v2/pet/{id}", web::get().to(handlers::get_pet))
-            .route("/v2/pet/{id}", web::put().to(handlers::update_pet_by_id))         
-            .route("/v2/pet/{id}", web::delete().to(handlers::delete_pet))
-            .route("/v2/pet/name/{name}", web::get().to(handlers::get_pet_by_name))
-
+            .route("/v2/pet", web::get().to(pethandlers::pet_index))
+            .route("/v2/pet", web::post().to(pethandlers::add_pet))
+            .route("/v2/pet", web::put().to(pethandlers::update_pet))
+            .route("/v2/pet/findByStatus", web::get().to(pethandlers::find_pet_by_status))            
+            .route("/v2/pet/findByTags", web::get().to(pethandlers::find_pet_by_tag))            
+            .route("/v2/pet/{id}", web::get().to(pethandlers::get_pet))
+            .route("/v2/pet/{id}", web::put().to(pethandlers::update_pet_by_id))         
+            .route("/v2/pet/{id}", web::delete().to(pethandlers::delete_pet))
+            .route("/v2/pet/name/{name}", web::get().to(pethandlers::get_pet_by_name))
+            // add user routes
+            .route("/v2/user", web::get().to(userhandlers::user_index))
+            .route("/v2/user", web::post().to(userhandlers::add_user))
+            .route("/v2/user/{username}", web::put().to(userhandlers::update_user_by_username))
+            .route("/v2/user/login", web::get().to(userhandlers::login_user))
+            .route("/v2/user/logout", web::get().to(userhandlers::logout_user))            
+            .route("/v2/user/{username}", web::get().to(userhandlers::get_user_by_username))
+            .route("/v2/user/{username}", web::delete().to(userhandlers::delete_user_by_username))
+            .route("/v2/user/createWithList", web::post().to(userhandlers::create_users_with_list))
+            
 
     })
     // use serverAddr from environment variable

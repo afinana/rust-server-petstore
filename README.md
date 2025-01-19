@@ -34,8 +34,8 @@ Install and run Redis server on your local machine or a remote server. You can d
 Create a .env file in the root directory of the project and configure your Redis connection settings. Example:
 
 ```bash
-REDIS_HOST=127.0.0.1
-REDIS_PORT=6379
+redisURI=redis://127.0.0.1
+serverAddr=localhost:8080
 ```
 
 4. Build the project:

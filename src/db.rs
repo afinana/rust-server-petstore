@@ -1,175 +1,188 @@
 // db.rs
 
-
 use redis::Commands;
 use crate::petmodel::Pet;
+use crate::usermodel::User;
+use serde_json::Error as SerdeError;
+use log::error;
 
 pub struct RedisDb {
-   pub client: redis::Connection,
+    pub client: redis::Connection,
 }
 
 impl RedisDb {
+    fn serialize<T: serde::Serialize>(value: &T) -> Result<String, SerdeError> {
+        serde_json::to_string(value)
+    } 
 
+    fn deserialize<'a, T: serde::Deserialize<'a>>(s: &'a str) -> Result<T, SerdeError> {
+        serde_json::from_str(s)
+    }
 
     pub fn add_pet(&mut self, pet: &Pet) -> redis::RedisResult<()> {
-        let pet_json = serde_json::to_string(pet).unwrap();
-        let _: () = self.client.hset("pets", pet.id, pet_json)?;
-        // save pet name indexed by name
+        let pet_json = Self::serialize(pet).map_err(|e| {
+            error!("Serialization error: {}", e);
+            redis::RedisError::from((redis::ErrorKind::TypeError, "Serialization error"))
+        })?;       
+        log::info!("Received request to add pet {:?}", pet_json);
+
+        let _: () = self.client.hset("pets", pet.id, pet_json)?;               
+        log::info!("Added to hset pets");  
+
         let _: () = self.client.hset("pet_names", pet.name.clone(), pet.id)?;
-       
-		// create string as pet_status:+status
-		let status_key = format!("pet_status:{}", pet.status.clone().unwrap_or("".to_string()));
-		 
-		
-		 // add pet id to a set of pet_status:+status
-		 let _: () = self.client.sadd(status_key, pet.id)?;
-		
-        // save pet tags indexed by tag name
+        log::info!("Added to hset names");
+
+        
+        // add pet status to set
+        let status_key = format!("pet_status:{}", pet.status.clone());
+        log::info!("Status key: {}", status_key);
+        
+        let _: () = self.client.sadd(status_key, pet.id)?;
+        log::info!("Added to set pet_status");
+
         if let Some(tags) = &pet.tags {
-			for tag in tags {
-				// add pet id to a set of pet_tags:+tag_name
-				let tag_key = format!("pet_tag:{}", tag.name.clone());
-				let _: () = self.client.sadd(tag_key, pet.id)?;
-				
-			}
-		}
+            for tag in tags {
+                let tag_key = format!("pet_tag:{}", tag.name.clone());
+                // log the tag key
+                log::info!("Tag key: {}", tag_key);
+                let _: () = self.client.sadd(tag_key, pet.id)?;
+                log::info!("Added to tag set");
+               
+            }
+        }
 
-		Ok(())
-     
+        Ok(())
     }
-	// update pet
-	pub fn update_pet(&mut self, pet: &Pet) -> redis::RedisResult<()> {
-		// remove pet name indexed by name
-        let my_pet: Option<Pet> = self.get_pet_by_id(pet.id)?;
-		// if pet exists call delete_pet
-		if let Some(my_pet) = my_pet {
-			self.delete_pet(my_pet.id)?;
-		}
 
-		// call update_pet and return Result
-		self.add_pet(pet)
-	}
+    pub fn update_pet(&mut self, pet: &Pet) -> redis::RedisResult<()> {
+        if let Some(my_pet) = self.get_pet_by_id(pet.id)? {
+            self.delete_pet(my_pet.id)?;
+        }
+        self.add_pet(pet)
+    }
 
-	// update pet by id
-	pub fn update_pet_by_id(&mut self, id: u64, pet: &Pet) -> redis::RedisResult<()> {
-		// add log pet.id
-		log::info!("update_pet_by_id: {}", id);
-		// update pet by id and return Result
-		self.add_pet(pet)
-		
-		 
-	}// end fn
-			
+    pub fn update_pet_by_id(&mut self, id: u64, pet: &Pet) -> redis::RedisResult<()> {
+        log::info!("update_pet_by_id: {}", id);
+        self.add_pet(pet)
+    }
 
     pub fn get_pets(&mut self) -> redis::RedisResult<Vec<Pet>> {
-		// get all pets
         let pet_map: std::collections::HashMap<String, String> = self.client.hgetall("pets")?;
-        // convert pet json to pet struct
-		let pets: Vec<Pet> = pet_map.values().map(|json| serde_json::from_str(json).unwrap()).collect();
+        let pets: Vec<Pet> = pet_map.values()
+            .filter_map(|json| Self::deserialize(json).ok())
+            .collect();
         Ok(pets)
-    }// end fn
+    }
 
     pub fn get_pet_by_id(&mut self, id: u64) -> redis::RedisResult<Option<Pet>> {
-		// get pet by id
-	    let pet_json: Option<String> = self.client.hget("pets", id)?;
-        // convert pet json to pet struct
-		let pet: Option<Pet> = match pet_json {
-            Some(json) => Some(serde_json::from_str(&json).unwrap()),
-            None => None,
-        };
-        Ok(pet)
-    }// end fn
+        let pet_json: Option<String> = self.client.hget("pets", id)?;
+        pet_json.map_or(Ok(None), |json| {
+            Self::deserialize(&json).map(Some).map_err(|e| {
+                error!("Deserialization error: {}", e);
+                redis::RedisError::from((redis::ErrorKind::TypeError, "Deserialization error"))
+            })
+        })
+    }
 
     pub fn delete_pet(&mut self, id: u64) -> redis::RedisResult<()> {
-
-        // remove pet name indexed by name
-        let pet: Option<Pet> = self.get_pet_by_id(id)?;		
-        // if pet exists
-		if let Some(pet) = pet {
-			// remove pet name indexed by name
-			let _: () = self.client.hdel("pet_names", pet.name)?;
-			 // remove pet id to a set of pet_status:+status
-			 let _: () = self.client.srem(format!("pet_status:{}", pet.status.unwrap_or("".to_string())), id)?;
-			 // remove pet id to a set of pet_tags:+tag_name
-			 if let Some(tags) = pet.tags {
-				 for tag in tags {
-					let _: () = self.client.srem(format!("pet_tag:{}", tag.name), id)?;
-				}// end for
-			}// end if
-
-		}// end if
-		
-		// remove pet category indexed by category name			
-		let _: () = self.client.hdel("pets", id)?;		
+        if let Some(pet) = self.get_pet_by_id(id)? {
+            let _: () = self.client.hdel("pet_names", pet.name)?;
+            let _: () = self.client.srem(format!("pet_status:{}", pet.status.clone()), id)?;
+            if let Some(tags) = pet.tags {
+                for tag in tags {
+                    let _: () = self.client.srem(format!("pet_tag:{}", tag.name), id)?;
+                }
+            }
+        }
+        let _: () = self.client.hdel("pets", id)?;
         Ok(())
-    }// end fn
+    }
 
-    // search pet by name
     pub fn get_pet_by_name(&mut self, name: &str) -> redis::RedisResult<Option<Pet>> {
-		// get pet id by name
-		let id: Option<u64> = self.client.hget("pet_names", name)?;
-		// get pet by id
-		match id {
-			Some(id) => self.get_pet_by_id(id),
-			None => Ok(None),
-		}
-	}
-   
-	// search pet by status
+        let id: Option<u64> = self.client.hget("pet_names", name)?;
+        id.map_or(Ok(None), |id| self.get_pet_by_id(id))
+    }
+
     pub fn get_pets_by_status(&mut self, status: &str) -> redis::RedisResult<Vec<Pet>> {
-      // parse a string of elements sparated by comma
-      let status: Vec<&str> = status.split(',').collect();
-      let mut pets: Vec<Pet> = vec![];
-      // for each status
-	  for s in status {
-		// create string as pet_status:+status
-		let status_key = format!("pet_status:{}", s);
-		
-		// find pet id of set status
-		let ids: Vec<u64> = self.client.smembers(status_key)?;
-		// for each pet id, get pet
-		for id in ids {
-			 // get pet by id
-			let pet = self.get_pet_by_id(id)?;
-			// if pet exists, add to pets
-			match pet {
-				Some(pet) => pets.push(pet),
-				None => (),
-			}
-		}// end for
-	  }// end for
-	  Ok(pets)
-	}// end fn
-	
-    // search pet by tag
-    pub fn get_pet_by_tags(&mut self, tag: &str) -> redis::RedisResult<Vec<Pet>> {
-        
-        // parse a string of elements sparated by comma
+        let status: Vec<&str> = status.split(',').collect();
+        let mut pets: Vec<Pet> = vec![];
+        for s in status {
+            let status_key = format!("pet_status:{}", s);
+            let ids: Vec<u64> = self.client.smembers(status_key)?;
+            for id in ids {
+                if let Some(pet) = self.get_pet_by_id(id)? {
+                    pets.push(pet);
+                }
+            }
+        }
+        Ok(pets)
+    }
+
+    pub fn get_pets_by_tags(&mut self, tag: &str) -> redis::RedisResult<Vec<Pet>> {
         let tag: Vec<&str> = tag.split(',').collect();
         let mut pets: Vec<Pet> = vec![];
-        // for each tag
-		for t in tag {
-		    
-			// create string as pet_tag:+tag
-			let tag_key = format!("pet_tag:{}", t);
-			// find pet id of set tag
-			let ids: Vec<u64> = self.client.smembers(tag_key)?;
-			// for each pet id, get pet
-			for id in ids {
-				let pet = self.get_pet_by_id(id)?;
-				match pet {
-					Some(pet) => pets.push(pet),
-					None => (),
-			    }
-			} // end for
-		}// end for
-		Ok(pets)
-	}// end fn
-}// end impl
+        for t in tag {
+            let tag_key = format!("pet_tag:{}", t);
+            let ids: Vec<u64> = self.client.smembers(tag_key)?;
+            for id in ids {
+                if let Some(pet) = self.get_pet_by_id(id)? {
+                    pets.push(pet);
+                }
+            }
+        }
+        Ok(pets)
+    }
 
-	
+    pub fn add_user(&mut self, user: &User) -> redis::RedisResult<()> {
+        let user_json = Self::serialize(user).map_err(|e| {
+            error!("Serialization error: {}", e);
+            redis::RedisError::from((redis::ErrorKind::TypeError, "Serialization error"))
+        })?;
+        let _: () = self.client.hset("users", user.id, user_json)?;
+        let _: () = self.client.hset("user_names", user.username.clone(), user.id)?;
+        Ok(())
+    }
 
+    pub fn get_users(&mut self) -> redis::RedisResult<Vec<User>> {
+        let user_map: std::collections::HashMap<String, String> = self.client.hgetall("users")?;
+        let users: Vec<User> = user_map.values()
+            .filter_map(|json| Self::deserialize(json).ok())
+            .collect();
+        Ok(users)
+    }
 
-	
-	
+    pub fn get_user_by_id(&mut self, id: u64) -> redis::RedisResult<Option<User>> {
+        let user_json: Option<String> = self.client.hget("users", id)?;
+        user_json.map_or(Ok(None), |json| {
+            Self::deserialize(&json).map(Some).map_err(|e| {
+                error!("Deserialization error: {}", e);
+                redis::RedisError::from((redis::ErrorKind::TypeError, "Deserialization error"))
+            })
+        })
+    }
 
+    pub fn get_user(&mut self, username: &str) -> redis::RedisResult<Option<User>> {
+        let id: Option<u64> = self.client.hget("user_names", username)?;
+        id.map_or(Ok(None), |id| self.get_user_by_id(id))
+    }
+
+    pub fn update_user(&mut self, user: &User) -> redis::RedisResult<()> {
+        if let Some(my_user) = self.get_user_by_id(user.id)? {
+            self.delete_user(my_user.id)?;
+        }
+        self.add_user(user)
+    }
+
+    pub fn delete_user(&mut self, id: u64) -> redis::RedisResult<()> {
+        if let Some(user) = self.get_user_by_id(id)? {
+            let _: () = self.client.hdel("user_names", user.username)?;
+        }
+        let _: () = self.client.hdel("users", id)?;
+        Ok(())
+    }
+
+    pub fn delete_user_by_username(&mut self, username: &str) -> redis::RedisResult<()> {
+        let id: Option<u64> = self.client.hget("user_names", username)?;
+        id.map_or(Ok(()), |id| self.delete_user(id))
+    }
+}
