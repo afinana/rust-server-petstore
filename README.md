@@ -34,8 +34,8 @@ Install and run Mongo server on your local machine or a remote server. You can d
 Create a .env file in the root directory of the project and configure your Mongo connection settings. Example:
 
 ```bash
-MONGO_HOST=127.0.0.1
-MONGO_PORT=27017
+redisURI=redis://127.0.0.1
+serverAddr=localhost:8080
 ```
 
 4. Build the project:
