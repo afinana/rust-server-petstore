@@ -1,8 +1,12 @@
 // main.rs
 
+use crate::petmodel::Pet;
+use crate::usermodel::User;
+
 use actix_web::{web, App, HttpServer};
 use std::sync::Mutex;
 use env_logger;
+
 mod db;
 mod pethandlers;
 mod userhandlers;
@@ -23,6 +27,7 @@ async fn main() -> std::io::Result<()> {
    
     // Create serverAddr from environment variable
     let server_addr = std::env::var("serverAddr").unwrap_or("localhost:8080".to_string());  
+  
     // Initialize Redis connection using a environment variable
     let redis_url = std::env::var("redisURI").unwrap_or("redis://localhost/".to_string());
     
