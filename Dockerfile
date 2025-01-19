@@ -1,31 +1,43 @@
-# Stage 1: Build the Rust application
-FROM rust:latest AS builder
+ARG BINARY_NAME_DEFAULT=rust-server-petstore
+ARG MY_GREAT_CONFIG_DEFAULT=""
 
-# Set the working directory
-WORKDIR /usr/src/app
+FROM clux/muslrust:stable AS builder
+RUN groupadd -g 10001 -r dockergrp && useradd -r -g dockergrp -u 10001 dockeruser
+ARG BINARY_NAME_DEFAULT
+ENV BINARY_NAME=$BINARY_NAME_DEFAULT
+# Build the project with target x86_64-unknown-linux-musl
 
-# Copy the Cargo.toml and Cargo.lock files
-COPY Cargo.toml Cargo.lock ./
+# Build dummy main with the project's Cargo lock and toml
+# This is a docker trick in order to avoid downloading and building 
+# dependencies when lock and toml not is modified.
+COPY Cargo.lock .
+COPY Cargo.toml .
+RUN mkdir src \
+    && echo "fn main() {print!(\"Dummy main\");} // dummy file" > src/main.rs
+RUN set -x && cargo build --target x86_64-unknown-linux-musl --release
+RUN ["/bin/bash", "-c", "set -x && rm target/x86_64-unknown-linux-musl/release/deps/${BINARY_NAME//-/_}*"]
 
-# Create a dummy main.rs to cache dependencies
-RUN mkdir src && echo "fn main() {}" > src/main.rs
+# Now add the rest of the project and build the real main
+COPY src ./src
+RUN set -x && cargo build --target x86_64-unknown-linux-musl --release
+RUN mkdir -p /build-out
+RUN set -x && cp target/x86_64-unknown-linux-musl/release/$BINARY_NAME /build-out/
 
-# Build dependencies to cache them
-RUN cargo build --release && rm -rf src
-
-# Copy the source code
-COPY . .
-
-# Build the application
-RUN cargo build --release
-
-# Stage 2: Create a minimal image with the binary
+# Create a minimal docker image 
 FROM scratch
 
-# Copy the binary from the builder stage
-COPY --from=builder /usr/src/app/target/release/rust-server-petstore /rust-server-petstore
+COPY --from=0 /etc/passwd /etc/passwd
+USER dockeruser
 
-# Expose the port your application listens on (if any)
-EXPOSE 8080
-# Set the binary as the entry point
-ENTRYPOINT ["/rust-server-petstore"]
+ARG BINARY_NAME_DEFAULT
+ENV BINARY_NAME=$BINARY_NAME_DEFAULT
+ARG MY_GREAT_CONFIG_DEFAULT
+ENV MY_GREAT_CONFIG=$MY_GREAT_CONFIG_DEFAULT
+
+ENV RUST_LOG="error,$BINARY_NAME=info"
+COPY --from=builder /build-out/$BINARY_NAME /
+
+# Start with an execution list (there is no sh in a scratch image)
+# No shell => no variable expansion, |, <, >, etc 
+# Hard coded start command
+CMD ["/rust-server-petstore"]

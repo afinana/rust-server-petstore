@@ -24,7 +24,7 @@ async fn main() -> std::io::Result<()> {
     // Create serverAddr from environment variable
     let server_addr = std::env::var("serverAddr").unwrap_or("localhost:8080".to_string());  
     // Initialize Redis connection using a environment variable
-    let redis_url = std::env::var("redisURI").unwrap_or("redis://127.0.0.1/".to_string());
+    let redis_url = std::env::var("redisURI").unwrap_or("redis://localhost/".to_string());
     
     let redis_client = redis::Client::open(redis_url).expect("Failed to connect to Redis");
     let redis_connection = redis_client.get_connection().expect("Failed to get Redis connection");
