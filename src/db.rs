@@ -1,6 +1,6 @@
 // db.rs
-// change all methods using mongodb instead of redis
 
+use redis::Commands;
 use crate::petmodel::Pet;
 use crate::usermodel::User;
 use serde_json::Error as SerdeError;

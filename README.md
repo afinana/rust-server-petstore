@@ -1,6 +1,6 @@
 # Rust Petstore Microservice
 
-This is a simple microservice implemented in Rust using Actix-Web framework, with MongoDB as the database backend. The microservice provides basic CRUD operations for managing pets.
+This is a simple microservice implemented in Rust using Actix-Web framework, with REDIS/Mongo as the database backend. The microservice provides basic CRUD operations for managing pets.
 
 ## Features
 
@@ -31,7 +31,7 @@ Install and run Mongo server on your local machine or a remote server. You can d
 
 3. Set up your environment variables:
 
-Create a .env file in the root directory of the project and configure your Mongo connection settings. Example:
+Create a .env file in the root directory of the project and configure your REDIS connection settings. Example:
 
 ```bash
 redisURI=redis://127.0.0.1
@@ -81,6 +81,10 @@ curl http://127.0.0.1:8080/pet/1
 ```bash
 curl -X DELETE http://127.0.0.1:8080/pet/1
 ```
+
+# Dockerfile 
+Based on Roger Torre's Dockerfile : https://dev.to/rogertorres/first-steps-with-docker-rust-30oi
+we need an image that has no Rust whatsoever, only the binary that will be executed and we use a Rust base image to build our binary and just move the binary to a Linux image without Rust. 
 
 
 # Contributing
