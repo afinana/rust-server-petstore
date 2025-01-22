@@ -13,8 +13,6 @@ on:
   pull_request:
     branches: [ main ]
 
-
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -24,6 +22,7 @@ jobs:
       # github.repository as <account>/<repo>
       USER_ACCOUNT: middleland
       IMAGE_NAME: rust-server-petstore
+      TAG_NAME: redis
       
     permissions:
       contents: read
@@ -32,38 +31,37 @@ jobs:
       id-token: write
 
     steps:
+      # Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Workaround: https://github.com/docker/build-push-action/issues/461
+      # Setup Docker buildx (a Docker CLI plugin for extended build capabilities with BuildKit)
       - name: Setup Docker buildx
-        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
+        uses: docker/setup-buildx-action@v3
 
-      # Login against a Docker registry except on PR
-      # https://github.com/docker/login-action
+      # Login to Docker registry (skip on pull requests)
       - name: Log into registry ${{ env.REGISTRY }}
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username:  ${{ env.USER_ACCOUNT }}
+          username: ${{ env.USER_ACCOUNT }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      # Extract metadata (tags, labels) for Docker
-      # https://github.com/docker/metadata-action
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
-        with:          
-           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      # Extract Docker metadata (tags, labels) for the image
+      # - name: Extract Docker metadata
+      #   id: meta
+      #   uses: docker/metadata-action@v5
+      #   with:
+      #     context: .          
+      #     images: name/app
         
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
         id: build-and-push
-        uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
+        uses: docker/build-push-action@v5
         with:
           context: .          
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ env.USER_ACCOUNT }}/${{ env.IMAGE_NAME }}:latest
-    
+          tags: ${{ env.USER_ACCOUNT }}/${{ env.IMAGE_NAME }}:${{ env.TAG_NAME }}
