@@ -1,4 +1,4 @@
-// handlers.rs
+// pethandlers.rs
 
 use crate::db;
 use std::sync::Mutex;
@@ -7,7 +7,7 @@ use crate::petmodel::Pet;
 
 
 // index handler to get all pets and log error message if failed using crate::db::MongoDb
-pub async fn index(mongo_db: web::Data<Mutex<db::MongoDb>>) -> impl Responder {
+pub async fn pet_index(mongo_db: web::Data<Mutex<db::MongoDb>>) -> impl Responder {
 	// add log start message
 	log::info!("Getting all pets");
 
@@ -155,7 +155,7 @@ pub async fn find_pet_by_status(mongo_db: web::Data<Mutex<db::MongoDb>>, query: 
 
 
 // Search by tags query parameter and log error and success message
-pub async fn get_pet_by_tag(mongo_db: web::Data<Mutex<db::MongoDb>>, query: web::Query<TagsQuery>) -> impl Responder {
+pub async fn find_pet_by_tag(mongo_db: web::Data<Mutex<db::MongoDb>>, query: web::Query<TagsQuery>) -> impl Responder {
 	// add log start message
 	log::info!("Finding pet by tags: {:?}", query.tags);
 

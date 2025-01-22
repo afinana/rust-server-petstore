@@ -11,9 +11,10 @@ pub struct Pet {
    
     pub name: String, 
     // Added `status` field
-    pub photo_urls: Option<Vec<String>>,   
+    pub photo_urls: Option<Vec<String>>, 
+    
     pub tags: Option<Vec<Tag>>,
-    pub status: Option<String>,
+    pub status: String 
 }
 
 #[derive(Debug, Serialize, Deserialize,Clone)] // Added `Clone` trait derivation

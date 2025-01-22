@@ -1,13 +1,32 @@
-FROM rust:1.77-alpine AS builder
-RUN apk add musl-dev --no-cache
-WORKDIR /src
-COPY . .
+# Rust as the base image
+FROM rust:1.77 AS build
+
+# Create a new empty shell project
+RUN USER=root cargo new --bin app
+WORKDIR /app
+
+# Copy our manifests
+COPY ./Cargo.lock ./Cargo.lock
+COPY ./Cargo.toml ./Cargo.toml
+
+# Build only the dependencies to cache them
+RUN cargo build --release
+RUN rm src/*.rs
+
+# Copy the source code
+COPY ./src ./src
+
+# Build for release.
+RUN rm ./target/release/deps/rust_server_petstore*
 RUN cargo build --release
 
-FROM alpine:3.15
-WORKDIR /app
-COPY --from=builder /src/target/release/rust-server-petstore .
+# The final base image
+FROM debian:bookworm-slim
+#FROM scratch
 
-# Expose the port your application listens on (if any)
-EXPOSE 8080
-ENTRYPOINT [ "./rust-server-petstore" ]
+# Copy from the previous build
+COPY --from=build /app/target/release/rust-server-petstore /rust-server-petstore
+# COPY --from=build /holodeck/target/release/holodeck/target/x86_64-unknown-linux-musl/release/holodeck .
+
+# Run the binary
+CMD ["/rust-server-petstore"]

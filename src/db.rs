@@ -152,9 +152,84 @@ impl MongoDb {
 		self.pet_collection.update_one(filter, update, None).await
 
 	}
+
+
+	// add user to the collection
+	pub async fn add_user(&self, user: &User) -> Result<InsertOneResult, Error> {
+		self.user_collection.insert_one(user, None).await
+	}
+	// update user in the collection
+	//pub async fn update_user(&self, user: &User) -> Result<UpdateResult, Error> {
+	//	let filter = doc! { "username": user.username.as_str() };
+	//	let user_bson = to_bson(user).unwrap(); // Replace `unwrap` with proper error handling.
+	//	let update = doc! { "$set": user_bson};			
+	//	self.user_collection.update_one(filter, update, None).await
+	//}
+
+	// delete user by username from the collection
+	pub async fn delete_user_by_username(&self, username: &str) -> Result<DeleteResult, Error> {
+		let filter = doc! { "username": username };
+		self.user_collection.delete_one(filter, None).await
+	}
+	// update user by username from the collection
+	pub async fn update_user_by_username(&self, username: &str) -> Result<UpdateResult, Error> {
+		let filter = doc! { "username": username };
+		// find one user by username and convert to user struct
+		let user = self.user_collection.find_one(filter.clone(), None).await.unwrap();
+		match user {
+			Some(user) => {
+				let user_bson = to_bson(&user).unwrap(); // Replace `unwrap` with proper error handling.
+				let update = doc! { "$set": user_bson};	
+			
+				self.user_collection.update_one(filter.clone(), update, None).await
+			}
+			None => Err(Error::from(std::io::Error::new(std::io::ErrorKind::NotFound, "User not found"))),
+		}
+	}
 		
-
-
-	
+	// get all users from the collection
+	pub async fn get_all_users(&self) -> Result<Vec<User>, Error> {
+		let mut cursor = self.user_collection.find(None, None).await?;
+		let mut users: Vec<User> = vec![];
+		while let Some(result) = cursor.next().await {
+			match result {
+				Ok(document) => {					
+					users.push(document);
+				}
+				Err(e) => return Err(e),
+			}
+		}
+		Ok(users)
+	}
+	// get user by username from the collection
+	pub async fn get_user_by_username(&self, username: &str) -> Option<User> {
+		let filter = doc! { "username": username };
+		let user = self.user_collection.find_one(filter, None).await.unwrap();
+		match user {
+			Some(user) => Some(user),
+			None => None,
+		}
+	}
+	// login user from the collection
+	pub async fn login_user(&self, username: &str, password: &str) -> Result<UpdateResult, Error> {
+		let filter = doc! { "username": username, "password": password };
+		let _user = self.user_collection.find_one(filter, None).await.unwrap();
+		match _user {
+			Some(_user) => {
+				let filter = doc! { "username": username };
+				let update = doc! { "$set": { "logged_in": true } };
+				self.user_collection.update_one(filter, update, None).await
+			}
+			None => Err(Error::from(std::io::Error::new(std::io::ErrorKind::NotFound, "User not found"))),
+		}
+		
+	}
+	// logout user from the collection
+	pub async fn logout_user(&self, username: &str) -> Result<UpdateResult, Error> {
+		let filter = doc! { "username": username };
+		let update = doc! { "$set": { "logged_in": false } };
+		self.user_collection.update_one(filter, update, None).await
+	}
+		
 }
 
