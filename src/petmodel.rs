@@ -2,9 +2,10 @@
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone)] // Added `Clone` trait derivation
+#[derive(Debug, Serialize, Deserialize,Clone)] // Added `Clone` trait derivation
 pub struct Pet {
-    pub id: u64,
+     
+    pub id: u64, 
     // add category field as struct with id and name
     pub category: Category,    
    
@@ -16,15 +17,16 @@ pub struct Pet {
     pub status: String 
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)] // Added `Clone` trait derivation
+#[derive(Debug, Serialize, Deserialize,Clone)] // Added `Clone` trait derivation
 pub struct Category {
-    pub id: u64,
-    pub name: String,
+    pub	id: u64,
+	pub	name: String
 }
 
-impl Category {}
-#[derive(Debug, Serialize, Deserialize, Clone)] // Added `Clone` trait derivation
+impl Category {}   
+#[derive(Debug, Serialize, Deserialize,Clone)] // Added `Clone` trait derivation
 pub struct Tag {
-    pub id: u64,
-    pub name: String,
+	pub id: u64,
+	pub name: String
 }
+

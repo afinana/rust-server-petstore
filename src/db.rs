@@ -1,10 +1,18 @@
 // db.rs
+// change all methods using mongodb instead of redis
 
 use crate::petmodel::Pet;
 use crate::usermodel::User;
-use log::error;
-use redis::Commands;
-use serde_json::Error as SerdeError;
+
+use futures::StreamExt;
+use mongodb::{
+    bson::{doc, to_bson }, 
+	error::Error, 
+	results::{DeleteResult, InsertOneResult, UpdateResult}, 
+	Collection,
+	Database
+
+};
 
 pub struct MongoDb {
 	pub client: mongodb::Client,
