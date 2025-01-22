@@ -1,31 +1,32 @@
-# Stage 1: Build the Rust application
-FROM rust:latest AS builder
+# Rust as the base image
+FROM rust:1.77 AS build
 
-# Set the working directory
-WORKDIR /usr/src/app
+# Create a new empty shell project
+RUN USER=root cargo new --bin app
+WORKDIR /app
 
-# Copy the Cargo.toml and Cargo.lock files
-COPY Cargo.toml Cargo.lock ./
+# Copy our manifests
+COPY ./Cargo.lock ./Cargo.lock
+COPY ./Cargo.toml ./Cargo.toml
 
-# Create a dummy main.rs to cache dependencies
-RUN mkdir src && echo "fn main() {}" > src/main.rs
-
-# Build dependencies to cache them
-RUN cargo build --release && rm -rf src
+# Build only the dependencies to cache them
+RUN cargo build --release
+RUN rm src/*.rs
 
 # Copy the source code
-COPY . .
+COPY ./src ./src
 
-# Build the application
+# Build for release.
+RUN rm ./target/release/deps/rust_server_petstore*
 RUN cargo build --release
 
-# Stage 2: Create a minimal image with the binary
-FROM scratch
+# The final base image
+FROM debian:bookworm-slim
+#FROM scratch
 
-# Copy the binary from the builder stage
-COPY --from=builder /usr/src/app/target/release/rust-server-petstore /rust-server-petstore
+# Copy from the previous build
+COPY --from=build /app/target/release/rust-server-petstore /rust-server-petstore
+# COPY --from=build /holodeck/target/release/holodeck/target/x86_64-unknown-linux-musl/release/holodeck .
 
-# Expose the port your application listens on (if any)
-EXPOSE 8080
-# Set the binary as the entry point
-ENTRYPOINT ["/rust-server-petstore"]
+# Run the binary
+CMD ["/rust-server-petstore"]
