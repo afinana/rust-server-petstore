@@ -1,10 +1,10 @@
 // db.rs
 
-use redis::Commands;
 use crate::petmodel::Pet;
 use crate::usermodel::User;
-use serde_json::Error as SerdeError;
 use log::error;
+use redis::Commands;
+use serde_json::Error as SerdeError;
 
 pub struct RedisDb {
     pub client: redis::Connection,
@@ -13,7 +13,7 @@ pub struct RedisDb {
 impl RedisDb {
     fn serialize<T: serde::Serialize>(value: &T) -> Result<String, SerdeError> {
         serde_json::to_string(value)
-    } 
+    }
 
     fn deserialize<'a, T: serde::Deserialize<'a>>(s: &'a str) -> Result<T, SerdeError> {
         serde_json::from_str(s)
@@ -23,20 +23,19 @@ impl RedisDb {
         let pet_json = Self::serialize(pet).map_err(|e| {
             error!("Serialization error: {}", e);
             redis::RedisError::from((redis::ErrorKind::TypeError, "Serialization error"))
-        })?;       
+        })?;
         log::info!("Received request to add pet {:?}", pet_json);
 
-        let _: () = self.client.hset("pets", pet.id, pet_json)?;               
-        log::info!("Added to hset pets");  
+        let _: () = self.client.hset("pets", pet.id, pet_json)?;
+        log::info!("Added to hset pets");
 
         let _: () = self.client.hset("pet_names", pet.name.clone(), pet.id)?;
         log::info!("Added to hset names");
 
-        
         // add pet status to set
         let status_key = format!("pet_status:{}", pet.status.clone());
         log::info!("Status key: {}", status_key);
-        
+
         let _: () = self.client.sadd(status_key, pet.id)?;
         log::info!("Added to set pet_status");
 
@@ -47,7 +46,6 @@ impl RedisDb {
                 log::info!("Tag key: {}", tag_key);
                 let _: () = self.client.sadd(tag_key, pet.id)?;
                 log::info!("Added to tag set");
-               
             }
         }
 
@@ -68,7 +66,8 @@ impl RedisDb {
 
     pub fn get_pets(&mut self) -> redis::RedisResult<Vec<Pet>> {
         let pet_map: std::collections::HashMap<String, String> = self.client.hgetall("pets")?;
-        let pets: Vec<Pet> = pet_map.values()
+        let pets: Vec<Pet> = pet_map
+            .values()
             .filter_map(|json| Self::deserialize(json).ok())
             .collect();
         Ok(pets)
@@ -87,7 +86,9 @@ impl RedisDb {
     pub fn delete_pet(&mut self, id: u64) -> redis::RedisResult<()> {
         if let Some(pet) = self.get_pet_by_id(id)? {
             let _: () = self.client.hdel("pet_names", pet.name)?;
-            let _: () = self.client.srem(format!("pet_status:{}", pet.status.clone()), id)?;
+            let _: () = self
+                .client
+                .srem(format!("pet_status:{}", pet.status.clone()), id)?;
             if let Some(tags) = pet.tags {
                 for tag in tags {
                     let _: () = self.client.srem(format!("pet_tag:{}", tag.name), id)?;
@@ -139,13 +140,16 @@ impl RedisDb {
             redis::RedisError::from((redis::ErrorKind::TypeError, "Serialization error"))
         })?;
         let _: () = self.client.hset("users", user.id, user_json)?;
-        let _: () = self.client.hset("user_names", user.username.clone(), user.id)?;
+        let _: () = self
+            .client
+            .hset("user_names", user.username.clone(), user.id)?;
         Ok(())
     }
 
     pub fn get_users(&mut self) -> redis::RedisResult<Vec<User>> {
         let user_map: std::collections::HashMap<String, String> = self.client.hgetall("users")?;
-        let users: Vec<User> = user_map.values()
+        let users: Vec<User> = user_map
+            .values()
             .filter_map(|json| Self::deserialize(json).ok())
             .collect();
         Ok(users)
