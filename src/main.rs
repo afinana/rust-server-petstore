@@ -4,9 +4,8 @@ use crate::petmodel::Pet;
 use crate::usermodel::User;
 
 use actix_web::{web, App, HttpServer};
-use std::sync::Mutex;
+use std::sync::Arc;
 use env_logger;
-
 mod db;
 mod userhandlers;
 mod pethandlers;
@@ -50,17 +49,19 @@ async fn main() -> std::io::Result<()> {
 
     
     // Create a mutex to share the RedisDb across multiple requests
-    let mongo_db = web::Data::new(Mutex::new(mongo_db));
+    //let mongo_db = web::Data::new(Mutex::new(mongo_db));
+
+    // Shared application state
+    let app_state = web::Data::new(Arc::new(mongo_db));
 
      // log starting message and server address and mongo url
      log::info!("Starting server at {} ",&server_addr);
      log::info!("Connecting to MongoDB at {}", &mongo_url);
     
     // Start HTTP server using the mongo_db as shared state and prefix /v2 to all routes   
-    
     HttpServer::new(move || {
         App::new()
-            .app_data(mongo_db.clone()) // Clone the web::Data containing RedisDb
+            .app_data(web::Data::from(app_state.clone())) // Clone the web::Data containing DB connection
             .route("/v2/pet", web::get().to(pethandlers::pet_index))
             .route("/v2/pet", web::post().to(pethandlers::add_pet))
             .route("/v2/pet", web::put().to(pethandlers::update_pet))

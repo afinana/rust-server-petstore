@@ -1,17 +1,17 @@
 // pethandlers.rs
 
 use crate::db;
-use std::sync::Mutex;
+use std::sync::{Arc};
 use actix_web::{web, HttpResponse, Responder};
 use crate::petmodel::Pet;
 
 
 // index handler to get all pets and log error message if failed using crate::db::MongoDb
-pub async fn pet_index(mongo_db: web::Data<Mutex<db::MongoDb>>) -> impl Responder {
+pub async fn pet_index(mongo_db: web::Data<Arc<db::MongoDb>>) -> impl Responder {
 	// add log start message
 	log::info!("Getting all pets");
 
-	let mongo_db = mongo_db.lock().unwrap();
+	
 	let pets = mongo_db.get_all_pets().await;
 	match pets {
 		Ok(pets) => {
@@ -27,11 +27,10 @@ pub async fn pet_index(mongo_db: web::Data<Mutex<db::MongoDb>>) -> impl Responde
 
 
 // add pet and log error message if failed
-pub async fn add_pet(mongo_db: web::Data<Mutex<db::MongoDb>>, pet: web::Json<Pet>) -> impl Responder {
+pub async fn add_pet(mongo_db: web::Data<Arc<db::MongoDb>>, pet: web::Json<Pet>) -> impl Responder {
 	// add log start message
 	log::info!("Adding pet: {:?}", pet);
 
-	let mongo_db = mongo_db.lock().unwrap();
 	let result = mongo_db.add_pet(&pet).await;
 	match result {
 		Ok(_) => HttpResponse::Ok().finish(),
@@ -42,13 +41,10 @@ pub async fn add_pet(mongo_db: web::Data<Mutex<db::MongoDb>>, pet: web::Json<Pet
 	}
 }
 // update a pet and log error message if failed
-pub async fn update_pet(mongo_db: web::Data<Mutex<db::MongoDb>>, pet: web::Json<Pet>) -> impl Responder {
-	
+pub async fn update_pet(mongo_db: web::Data<Arc<db::MongoDb>>, pet: web::Json<Pet>) -> impl Responder {	
 	// add log start message
 	log::info!("Updating pet: {:?}", pet);
 
-	
-	let mongo_db = mongo_db.lock().unwrap();
 	let result = mongo_db.update_pet(&pet).await;
 	match result {
 		Ok(_) => HttpResponse::Ok().finish(),
@@ -59,11 +55,10 @@ pub async fn update_pet(mongo_db: web::Data<Mutex<db::MongoDb>>, pet: web::Json<
 	}
 }
 // update a pet by id and log error message if failed
-pub async fn update_pet_by_id(mongo_db: web::Data<Mutex<db::MongoDb>>, id: web::Path<String>, pet: web::Json<Pet>) -> impl Responder {
+pub async fn update_pet_by_id(mongo_db: web::Data<Arc<db::MongoDb>>, id: web::Path<String>, pet: web::Json<Pet>) -> impl Responder {	
 	// add log start message
 	log::info!("Updating pet by id: {:?}", id);
-
-	let mongo_db = mongo_db.lock().unwrap();
+	
 	let result = mongo_db.update_pet_by_id(id.as_str(), &pet).await;
 	match result {
 		Ok(_) => HttpResponse::Ok().finish(),
@@ -78,11 +73,10 @@ pub async fn update_pet_by_id(mongo_db: web::Data<Mutex<db::MongoDb>>, id: web::
 
 
 // get pet by id and log error message if not found
-pub async fn get_pet(mongo_db: web::Data<Mutex<db::MongoDb>>, id: web::Path<String>) -> impl Responder {
+pub async fn get_pet(mongo_db: web::Data<Arc<db::MongoDb>>, id: web::Path<String>) -> impl Responder {
 	// add log start message
 	log::info!("Getting pet by id: {:?}", id);
-
-	let mongo_db = mongo_db.lock().unwrap();
+	
 	let pet = mongo_db.get_pet_by_id(&id).await;
 	match pet {
 		Some(pet) => {
@@ -98,11 +92,11 @@ pub async fn get_pet(mongo_db: web::Data<Mutex<db::MongoDb>>, id: web::Path<Stri
 
 
 // delete pet by id and log error message if not found
-pub async fn delete_pet(mongo_db: web::Data<Mutex<db::MongoDb>>, id: web::Path<String>) -> impl Responder {
+pub async fn delete_pet(mongo_db: web::Data<Arc<db::MongoDb>>, id: web::Path<String>) -> impl Responder {
 	// add log start message
 	log::info!("Deleting pet by id: {:?}", id);
 	
-	let mongo_db = mongo_db.lock().unwrap();
+	
 	let result = mongo_db.delete_pet_by_id(id.as_str()).await;
 	match result {
 		Ok(_) => HttpResponse::Ok().finish(),
@@ -114,11 +108,11 @@ pub async fn delete_pet(mongo_db: web::Data<Mutex<db::MongoDb>>, id: web::Path<S
 }
 
 // Search by name and log error message if not found
-pub async fn get_pet_by_name(mongo_db: web::Data<Mutex<db::MongoDb>>, query: web::Query<NameQuery>) -> impl Responder {
+pub async fn get_pet_by_name(mongo_db: web::Data<Arc<db::MongoDb>>, query: web::Query<NameQuery>) -> impl Responder {
 	// add log start message
 	log::info!("Getting pet by name: {:?}", query.name);
 
-	let mongo_db = mongo_db.lock().unwrap();
+
 	let pets = mongo_db.get_pets_by_name(&query.name).await;
 	match pets {
 		Ok(pets) => {
@@ -133,11 +127,11 @@ pub async fn get_pet_by_name(mongo_db: web::Data<Mutex<db::MongoDb>>, query: web
 }
 
 // Search by status query parameter and log error and success message
-pub async fn find_pet_by_status(mongo_db: web::Data<Mutex<db::MongoDb>>, query: web::Query<StatusQuery>) -> impl Responder {
+pub async fn find_pet_by_status(mongo_db: web::Data<Arc<db::MongoDb>>, query: web::Query<StatusQuery>) -> impl Responder {
 	// add log start message
 	log::info!("Finding pet by status: {:?}", query.status);
 
-	let mongo_db = mongo_db.lock().unwrap();
+
 	let pets = mongo_db.get_pets_by_status(&query.status).await;
 	match pets {
 		Ok(pets) => {
@@ -155,11 +149,11 @@ pub async fn find_pet_by_status(mongo_db: web::Data<Mutex<db::MongoDb>>, query: 
 
 
 // Search by tags query parameter and log error and success message
-pub async fn find_pet_by_tag(mongo_db: web::Data<Mutex<db::MongoDb>>, query: web::Query<TagsQuery>) -> impl Responder {
+pub async fn find_pet_by_tag(mongo_db: web::Data<Arc<db::MongoDb>>, query: web::Query<TagsQuery>) -> impl Responder {
 	// add log start message
 	log::info!("Finding pet by tags: {:?}", query.tags);
 
-	let mongo_db = mongo_db.lock().unwrap();
+
 	let pets = mongo_db.get_pets_by_tag(&query.tags).await;
 	match pets {
 		Ok(pets) => {
