@@ -6,12 +6,12 @@ use actix_web::{web, HttpResponse, Responder};
 use std::sync::Mutex;
 
 // index handler to get all pets and log error message if failed
-pub async fn pet_index(redis_db: web::Data<Mutex<RedisDb>>) -> impl Responder {
+pub async fn pet_index(data: web::Data<Mutex<RedisDb>>) -> impl Responder {
     // log request
     log::info!("Received request for index");
 
     // get RedisDb instance from shared data
-	let mut redis_db = redis_db.lock().unwrap(); 
+    let mut redis_db = data.lock().unwrap();
     match redis_db.get_pets() {
         Ok(pets) => {
             // log pets
@@ -25,11 +25,11 @@ pub async fn pet_index(redis_db: web::Data<Mutex<RedisDb>>) -> impl Responder {
     }
 }
 // add pet and log error message if failed
-pub async fn add_pet(redis_db: web::Data<Mutex<RedisDb>>, new_pet: web::Json<Pet>) -> impl Responder {
+pub async fn add_pet(data: web::Data<Mutex<RedisDb>>, new_pet: web::Json<Pet>) -> impl Responder {
     // log request
     log::info!("Received request to add pet {:?}", new_pet);
 
-	let mut redis_db = redis_db.lock().unwrap();
+    let mut redis_db = data.lock().unwrap();
     match redis_db.add_pet(&new_pet) {
         Ok(_) => {
             log::info!("Successfully added pet {:?}", new_pet);
@@ -92,7 +92,6 @@ pub async fn update_pet_by_id(
         }
     }
 }
-
 
 // get pet by id and log error message if not found
 pub async fn get_pet(data: web::Data<Mutex<RedisDb>>, path: web::Path<u64>) -> impl Responder {
@@ -165,12 +164,14 @@ pub async fn get_pet_by_name(
 
 // Search by status query parameter and log error and success message
 pub async fn find_pet_by_status(
-    redis_db: web::Data<Mutex<RedisDb>>,
+    data: web::Data<Mutex<RedisDb>>,
     query: web::Query<StatusQuery>,
 ) -> impl Responder {
     // log request
     log::info!("Received request for pet with status  {:?}", query);
-	let mut redis_db = redis_db.lock().unwrap();
+
+    let mut redis_db = data.lock().unwrap();
+
     match redis_db.get_pets_by_status(&query.status) {
         Ok(pets) => {
             log::info!("Successfully retrieved pets with status {:?}", query.status);
