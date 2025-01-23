@@ -23,16 +23,16 @@ async fn main() -> std::io::Result<()> {
     // Initialize Redis connection using a environment variable
     let redis_url = std::env::var("redisURI").unwrap_or("redis://127.0.0.1/".to_string());
 
-    let redis_client = redis::Client::open(redis_url).expect("Failed to connect to Redis");
-    let redis_connection = redis_client
-        .get_connection()
-        .expect("Failed to get Redis connection");
+    let redis_client: redis::Client = redis::Client::open(redis_url).expect("Failed to connect to Redis");
+    
 
     // Wrap RedisDb in a Mutex to share across threads
     let redis_db = web::Data::new(Mutex::new(db::RedisDb {
-        client: redis_connection,
+        client: redis_client,
     }));
 
+
+  
     // log starting message and server address and redis url
     log::info!("Starting server at {} ", &server_addr);
 
