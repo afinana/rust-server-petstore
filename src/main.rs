@@ -28,7 +28,7 @@ async fn main() -> std::io::Result<()> {
     let server_addr = std::env::var("serverAddr").unwrap_or("localhost:8080".to_string());  
   
     // Initialize Redis connection using a environment variable
-    let mongo_url = std::env::var("mongoURI").unwrap_or("mongodb://root:example@localhost:27017/?authSource=admin".to_string());
+    let mongo_url = std::env::var("databaseURI").unwrap_or("mongodb://root:example@localhost:27017/?authSource=admin".to_string());
     
     // Create a new MongoDB client
     let client = mongodb::Client::with_uri_str(&mongo_url).await.expect("Failed to connect to MongoDB");
