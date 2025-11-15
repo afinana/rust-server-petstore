@@ -12,6 +12,8 @@ mod pethandlers;
 mod petmodel;
 mod usermodel;
 
+use actix_cors::Cors;
+
 
 
 #[actix_web::main]
@@ -61,6 +63,17 @@ async fn main() -> std::io::Result<()> {
     // Start HTTP server using the mongo_db as shared state and prefix /v2 to all routes   
     HttpServer::new(move || {
         App::new()
+            .wrap(
+                Cors::default()
+                    .allowed_origin("https://angular-petstore.middleland.info")
+                    .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
+                    .allowed_headers(vec![
+                        actix_web::http::header::AUTHORIZATION,
+                        actix_web::http::header::CONTENT_TYPE,
+                    ])
+                    .supports_credentials()
+                    .max_age(3600),
+            )
             .app_data(web::Data::from(app_state.clone())) // Clone the web::Data containing DB connection
             .route("/v2/pet", web::get().to(pethandlers::pet_index))
             .route("/v2/pet", web::post().to(pethandlers::add_pet))
