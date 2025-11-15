@@ -12,6 +12,8 @@ mod pethandlers;
 mod petmodel;
 mod usermodel;
 
+use actix_cors::Cors;
+
 
 
 #[actix_web::main]
@@ -28,7 +30,7 @@ async fn main() -> std::io::Result<()> {
     let server_addr = std::env::var("serverAddr").unwrap_or("localhost:8080".to_string());  
   
     // Initialize Redis connection using a environment variable
-    let mongo_url = std::env::var("mongoURI").unwrap_or("mongodb://root:example@localhost:27017/?authSource=admin".to_string());
+    let mongo_url = std::env::var("databaseURI").unwrap_or("mongodb://root:example@localhost:27017/?authSource=admin".to_string());
     
     // Create a new MongoDB client
     let client = mongodb::Client::with_uri_str(&mongo_url).await.expect("Failed to connect to MongoDB");
@@ -61,6 +63,17 @@ async fn main() -> std::io::Result<()> {
     // Start HTTP server using the mongo_db as shared state and prefix /v2 to all routes   
     HttpServer::new(move || {
         App::new()
+            .wrap(
+                Cors::default()
+                    .allowed_origin("https://angular-petstore.middleland.info")
+                    .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
+                    .allowed_headers(vec![
+                        actix_web::http::header::AUTHORIZATION,
+                        actix_web::http::header::CONTENT_TYPE,
+                    ])
+                    .supports_credentials()
+                    .max_age(3600),
+            )
             .app_data(web::Data::from(app_state.clone())) // Clone the web::Data containing DB connection
             .route("/v2/pet", web::get().to(pethandlers::pet_index))
             .route("/v2/pet", web::post().to(pethandlers::add_pet))
