@@ -1,5 +1,5 @@
 # Rust as the base image
-FROM rust:1.91.1-slim as builder
+FROM rust:1.91.1 as builder
 
 # Create a new empty shell project
 RUN USER=root cargo new --bin app
