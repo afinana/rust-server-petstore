@@ -1,33 +1,24 @@
-# Rust as the base image
-FROM rust:1.91.1 as builder
-
-# Create a new empty shell project
-RUN USER=root cargo new --bin app
+# === builder stage ==========================================================
+FROM rust:1.77 AS builder
 WORKDIR /app
 
-# Copy our manifests
-COPY ./Cargo.lock ./Cargo.lock
-COPY ./Cargo.toml ./Cargo.toml
-
-# Build only the dependencies to cache them
+# Copy manifest files and pull dependencies before copying sources so layers cache
+COPY Cargo.lock Cargo.toml ./
+RUN mkdir src && echo "fn main() { println!(\"loading deps...\"); }" > src/main.rs
 RUN cargo build --release
-RUN rm src/*.rs
 
-# Copy the source code
+# Copy actual source files and rebuild the release binary
 COPY ./src ./src
-
-# Build for release.
-RUN rm ./target/release/deps/rust_server_petstore*
 RUN cargo build --release
 
-# The final base image
+# === runtime stage ==========================================================
 FROM debian:bookworm-slim
-#FROM scratch
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 
-# Copy from the previous build
+# Copy final binary from builder image
 COPY --from=builder /app/target/release/rust-server-petstore /rust-server-petstore
-# For using scratch as base image
-# COPY --from=build /holodeck/target/release/holodeck/target/x86_64-unknown-linux-musl/release/holodeck .
 
-# Run the binary
-CMD ["/rust-server-petstore"]
+EXPOSE 8080
+ENV RUST_LOG=actix_web=info
+
+ENTRYPOINT ["/rust-server-petstore"]
