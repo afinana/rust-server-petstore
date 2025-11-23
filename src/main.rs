@@ -58,6 +58,10 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         let cors = Cors::default()
             .allowed_origin("https://angular-petstore.middleland.info")
+            .allowed_origin("https://react-petstore.middleland.info")
+             .allowed_origin("https://go-gin-petstore.middleland.info")
+            .allowed_origin("http://localhost:4200")
+            .allowed_origin("http://localhost:8080")
             .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
             .allowed_headers(vec![actix_web::http::header::AUTHORIZATION, actix_web::http::header::CONTENT_TYPE])
             .supports_credentials();
