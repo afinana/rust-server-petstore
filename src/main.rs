@@ -4,6 +4,7 @@ use crate::petmodel::Pet;
 use crate::usermodel::User;
 
 use actix_web::{web, App, HttpServer};
+use actix_cors::Cors;
 use std::sync::Arc;
 use env_logger;
 mod db;
@@ -19,6 +20,7 @@ async fn main() -> std::io::Result<()> {
     
     // add logging
     std::env::set_var("RUST_LOG", "actix_web=info");
+
     // Initialize logger
     env_logger::Builder::new()
        .filter_level(log::LevelFilter::Debug)
@@ -40,17 +42,11 @@ async fn main() -> std::io::Result<()> {
     let users = db.collection::<User>("users");
 
     // create mongodb instance using cliente db and collection
-    let mongo_db = db::MongoDb {
-        client,
-        db,
+    let mongo_db = db::MongoDb {       
         pet_collection: pets,
         user_collection: users,
     };
-
     
-    // Create a mutex to share the RedisDb across multiple requests
-    //let mongo_db = web::Data::new(Mutex::new(mongo_db));
-
     // Shared application state
     let app_state = web::Data::new(Arc::new(mongo_db));
 
@@ -60,7 +56,13 @@ async fn main() -> std::io::Result<()> {
     
     // Start HTTP server using the mongo_db as shared state and prefix /v2 to all routes   
     HttpServer::new(move || {
+        let cors = Cors::default()
+            .allowed_origin("https://angular-petstore.middleland.info")
+            .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
+            .allowed_headers(vec![actix_web::http::header::AUTHORIZATION, actix_web::http::header::CONTENT_TYPE])
+            .supports_credentials();
         App::new()
+            .wrap(cors)
             .app_data(web::Data::from(app_state.clone())) // Clone the web::Data containing DB connection
             .route("/v2/pet", web::get().to(pethandlers::pet_index))
             .route("/v2/pet", web::post().to(pethandlers::add_pet))

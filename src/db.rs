@@ -10,14 +10,11 @@ use mongodb::{
     bson::{doc, to_bson }, 
 	error::Error, 
 	results::{DeleteResult, InsertOneResult, UpdateResult}, 
-	Collection,
-	Database
+	Collection	
 
 };
 
 pub struct MongoDb {
-	pub client: mongodb::Client,
-	pub db: Database,
 	pub pet_collection: Collection<Pet>,
 	pub user_collection: Collection<User>,
 }

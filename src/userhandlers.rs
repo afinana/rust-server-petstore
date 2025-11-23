@@ -36,21 +36,7 @@ pub async fn add_user(mongo_db: web::Data<Arc<db::MongoDb>>, user: web::Json<Use
 		}
 	}
 }
-// update a user and log error message if failed
-//pub async fn update_user(mongo_db: web::Data<Mutex<db::MongoDb>>, user: web::Json<User>) -> impl Responder {
-	
-//	// add log start message
-//	log::info!("Updating user: {:?}",user);
-//	let mongo_db = mongo_db.lock().unwrap();
-//	let result = mongo_db.update_user(&user).await;
-//	match result {
-//		Ok(_) => HttpResponse::Ok().finish(),
-//		Err(e) => {
-//			log::error!("Failed to update user: {:?}", e);
-//			HttpResponse::InternalServerError().finish()
-//		}
-//	}
-//}
+
 // update a user by username and log error message if failed
 pub async fn update_user_by_username(mongo_db: web::Data<Arc<db::MongoDb>>,username: web::Path<String>) -> impl Responder {
 	

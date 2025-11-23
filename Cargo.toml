@@ -6,15 +6,16 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web = "4.0"
-serde = { version = "1.0.105", features = ["derive"] }
-serde_json = "1.0.53"
+actix-web = "4.12.0"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
 
-mongodb ={ version = "3.2.0"}
-tokio = "1.43.0"
-futures = "0.3"
+mongodb = { version = "3.4.1" }
+tokio = "1.48.0"
+futures = "0.3.31"
 
 # add log and env_logger for logging
-bson = "2.13.0"
-env_logger = "0.11.6"
-log = "0.4"  # Add this line
+bson = "2.15.0"
+env_logger = "0.11.8"
+log = "0.4.28"
+actix-cors = "0.6.5"
