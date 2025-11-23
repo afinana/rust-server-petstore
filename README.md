@@ -54,6 +54,17 @@ After building the project, you can run the microservice using:
 cargo run --release
 ```
 
+7. CORS support:
+
+The server already allows cross-origin requests from `https://angular-petstore.middleland.info` with `GET`, `POST`, `PUT`, and `DELETE`. Use the OPTIONS verb to verify the headers before calling one of the endpoints:
+
+```bash
+curl -i -X OPTIONS \
+  -H "Origin: https://angular-petstore.middleland.info" \
+  -H "Access-Control-Request-Method: POST" \
+  http://127.0.0.1:8080/v2/pet
+```
+
 6. Access the API endpoints:
 
 Once the microservice is running, you can access the API endpoints using tools like cURL or Postman. Here are some example requests:

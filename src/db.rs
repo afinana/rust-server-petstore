@@ -10,14 +10,11 @@ use mongodb::{
     bson::{doc, to_bson }, 
 	error::Error, 
 	results::{DeleteResult, InsertOneResult, UpdateResult}, 
-	Collection,
-	Database
+	Collection	
 
 };
 
 pub struct MongoDb {
-	pub client: mongodb::Client,
-	pub db: Database,
 	pub pet_collection: Collection<Pet>,
 	pub user_collection: Collection<User>,
 }
@@ -140,9 +137,13 @@ impl MongoDb {
 	}
 	// delete a pey by id from the collection
 	pub async fn delete_pet_by_id(&self, id: &str) -> Result<DeleteResult, Error> {
-		// create a filter convert id to i64
-		let filter = doc! { "id": id.parse::<i64>().unwrap() };
-		self.pet_collection.delete_one(filter).await
+	    // convert id to i64
+	    let my_id = id.parse::<i64>().unwrap();
+		// create a filter
+		let filter = doc! { "id": my_id };
+		self.pet_collection.delete_one(filter).await	
+		
+		
 	}
 	
 	

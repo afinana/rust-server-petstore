@@ -2,19 +2,16 @@
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize,Clone)] // Added `Clone` trait derivation
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Pet {
-     
-    pub id: u64, 
-    // add category field as struct with id and name
-    pub category: Category,    
-   
-    pub name: String, 
-    // Added `status` field
-    pub photo_urls: Option<Vec<String>>, 
-    
-    pub tags: Option<Vec<Tag>>,
-    pub status: String 
+    pub id: u64,
+    pub category: Category,
+    pub name: String,
+    #[serde(rename = "photoUrls", default)]
+    pub photo_urls: Vec<String>,
+    #[serde(default)]
+    pub tags: Vec<Tag>,
+    pub status: String,
 }
 
 #[derive(Debug, Serialize, Deserialize,Clone)] // Added `Clone` trait derivation
