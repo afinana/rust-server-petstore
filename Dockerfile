@@ -1,5 +1,5 @@
 # === builder stage ==========================================================
-FROM rust:1.82 AS builder
+FROM rust:1.84 AS builder
 WORKDIR /app
 
 # Copy manifest files and pull dependencies before copying sources so layers cache
