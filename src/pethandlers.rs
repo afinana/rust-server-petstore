@@ -1,7 +1,7 @@
 // pethandlers.rs
 
 use crate::db;
-use std::sync::{Arc};
+use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder};
 use crate::petmodel::Pet;
 
