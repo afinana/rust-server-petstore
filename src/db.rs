@@ -148,3 +148,19 @@ impl MongoDb {
     }
 }
 
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn test_id_parsing() {
+        let id = "123";
+        let parsed = id.parse::<i64>();
+        assert!(parsed.is_ok());
+        assert_eq!(parsed.unwrap(), 123);
+
+        let invalid_id = "abc";
+        let parsed_invalid = invalid_id.parse::<i64>();
+        assert!(parsed_invalid.is_err());
+    }
+}
+

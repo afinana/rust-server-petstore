@@ -1,17 +1,12 @@
 // main.rs
 
-mod db;
-mod pethandlers;
-mod petmodel;
-mod userhandlers;
-mod usermodel;
-
 use actix_cors::Cors;
 use actix_web::{http, web, App, HttpServer};
-use db::MongoDb;
-use petmodel::Pet;
+use rust_server_petstore::db::MongoDb;
+use rust_server_petstore::petmodel::Pet;
+use rust_server_petstore::usermodel::User;
+use rust_server_petstore::config_app;
 use std::env;
-use usermodel::User;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -57,32 +52,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(actix_web::middleware::Logger::default())
             .wrap(cors)
             .app_data(app_state.clone())
-            .service(
-                web::scope("/v2")
-                    .service(
-                        web::scope("/pet")
-                            .route("", web::get().to(pethandlers::pet_index))
-                            .route("", web::post().to(pethandlers::add_pet))
-                            .route("", web::put().to(pethandlers::update_pet))
-                            .route("/findByStatus", web::get().to(pethandlers::find_pet_by_status))
-                            .route("/findByTags", web::get().to(pethandlers::find_pet_by_tag))
-                            .route("/{id}", web::get().to(pethandlers::get_pet))
-                            .route("/{id}", web::put().to(pethandlers::update_pet_by_id))
-                            .route("/{id}", web::delete().to(pethandlers::delete_pet))
-                            .route("/name/{name}", web::get().to(pethandlers::get_pet_by_name)),
-                    )
-                    .service(
-                        web::scope("/user")
-                            .route("", web::get().to(userhandlers::user_index))
-                            .route("", web::post().to(userhandlers::add_user))
-                            .route("/login", web::get().to(userhandlers::login_user))
-                            .route("/logout", web::get().to(userhandlers::logout_user))
-                            .route("/createWithList", web::post().to(userhandlers::create_users_with_list))
-                            .route("/{username}", web::get().to(userhandlers::get_user_by_username))
-                            .route("/{username}", web::put().to(userhandlers::update_user_by_username))
-                            .route("/{username}", web::delete().to(userhandlers::delete_user_by_username)),
-                    ),
-            )
+            .configure(config_app)
     })
     .bind(&server_addr)?
     .run()
