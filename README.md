@@ -1,105 +1,97 @@
 # Rust Petstore Microservice
 
-This is a simple microservice implemented in Rust using Actix-Web framework, with REDIS/Mongo as the database backend. The microservice provides basic CRUD operations for managing pets.
+A premium, high-performance Petstore API built with **Rust**, **Actix-Web**, and **MongoDB**.
 
-## Features
+## 🚀 Features
 
-- Add a new pet
-- Retrieve all pets
-- Retrieve a specific pet by ID
-- Delete a pet by ID
+- **Full CRUD**: Manage pets and users with ease.
+- **Search**: Advanced search by status, tags, and name.
+- **Security**: CORS-ready and environment-based configuration.
+- **Robustness**: Proper error handling and logging.
+- **Dockerized**: Optimized multi-stage Docker builds.
 
-## Requirements
+## 🛠 Tech Stack
 
-- Rust programming language
-- Redis server
+- **Backend**: [Rust](https://www.rust-lang.org/)
+- **Web Framework**: [Actix-Web](https://actix.rs/)
+- **Database**: [MongoDB](https://www.mongodb.com/)
+- **Serialization**: [Serde](https://serde.rs/)
 
-## Setup
+## 📋 Requirements
 
- **Clone the repository:**
+- Rust 1.80+
+- MongoDB 6.0+
 
-   ```bash
-   git clone https://github.com/your_username/your_repository.git
-   ```
-1. Install Rust:
+## ⚙️ Setup
 
-If you haven't already installed Rust, you can do so using Rustup, Rust's official toolchain installer.
+1.  **Clone the repository:**
 
-2. Install Mongo DB:
+    ```bash
+    git clone https://github.com/afinana/rust-server-petstore.git
+    cd rust-server-petstore
+    ```
 
-Install and run Mongo server on your local machine or a remote server. You can download Redis from here or install it using your package manager.
+2.  **Environment Variables:**
 
-3. Set up your environment variables:
+    Create a `.env` file or export the following variables:
 
-Create a .env file in the root directory of the project and configure your REDIS connection settings. Example:
+    ```bash
+    DATABASE_URI=mongodb://root:example@localhost:27017/?authSource=admin
+    SERVER_ADDR=127.0.0.1:8080
+    RUST_LOG=actix_web=info,rust_server_petstore=debug
+    ```
 
-```bash
-redisURI=redis://127.0.0.1
-serverAddr=localhost:8080
-```
+3.  **Run with Cargo:**
 
-4. Build the project:
+    ```bash
+    cargo run
+    ```
 
-Navigate to the project directory and run:
+4.  **Run with Docker:**
 
-```bash
-cargo build --release
-```
+    ```bash
+    docker build -t petstore-rust .
+    docker run -p 8080:8080 --env-file .env petstore-rust
+    ```
 
-5. Run the microservice:
+## 🛣 API Endpoints
 
-After building the project, you can run the microservice using:
+All endpoints are prefixed with `/v2`.
 
-```bash
-cargo run --release
-```
+### Pets
+- `GET /v2/pet` - List all pets
+- `POST /v2/pet` - Add a new pet
+- `PUT /v2/pet` - Update an existing pet
+- `GET /v2/pet/{id}` - Find pet by ID
+- `DELETE /v2/pet/{id}` - Remove a pet
+- `GET /v2/pet/findByStatus?status=available` - Find pets by status
+- `GET /v2/pet/findByTags?tags=tag1,tag2` - Find pets by tags
+- `GET /v2/pet/name/{name}` - Find pets by name
 
-7. CORS support:
+### Users
+- `GET /v2/user` - List all users
+- `POST /v2/user` - Create user
+- `POST /v2/user/createWithList` - Create multiple users
+- `GET /v2/user/login?username=...&password=...` - User login
+- `GET /v2/user/logout?username=...` - User logout
+- `GET /v2/user/{username}` - Get user by username
+- `PUT /v2/user/{username}` - Update user
+- `DELETE /v2/user/{username}` - Delete user
 
-The server already allows cross-origin requests from `https://angular-petstore.middleland.info` with `GET`, `POST`, `PUT`, and `DELETE`. Use the OPTIONS verb to verify the headers before calling one of the endpoints:
+## 🧪 Testing
 
-```bash
-curl -i -X OPTIONS \
-  -H "Origin: https://angular-petstore.middleland.info" \
-  -H "Access-Control-Request-Method: POST" \
-  http://127.0.0.1:8080/v2/pet
-```
-
-6. Access the API endpoints:
-
-Once the microservice is running, you can access the API endpoints using tools like cURL or Postman. Here are some example requests:
-
-- Add a pet:
-
-```bash
-
-curl -X POST -H "Content-Type: application/json" -d '{"id": 1, "name": "Fluffy", "category": "Dog"}' http://127.0.0.1:8080/pet
-
-```
-- Retrieve all pets:
-
-```bash
-curl http://127.0.0.1:8080/
-```
-
-- Retrieve a specific pet (with ID 1 in this example):
+You can test the API using `curl`:
 
 ```bash
-curl http://127.0.0.1:8080/pet/1
+# Add a pet
+curl -X POST http://localhost:8080/v2/pet \
+  -H "Content-Type: application/json" \
+  -d '{"id": 101, "name": "Buster", "category": {"id": 1, "name": "Dog"}, "photoUrls": [], "tags": [], "status": "available"}'
+
+# Get pet
+curl http://localhost:8080/v2/pet/101
 ```
-- Delete a pet (with ID 1 in this example):
 
-```bash
-curl -X DELETE http://127.0.0.1:8080/pet/1
-```
+## 📄 License
 
-# Dockerfile 
-Based on Roger Torre's Dockerfile : https://dev.to/rogertorres/first-steps-with-docker-rust-30oi
-we need an image that has no Rust whatsoever, only the binary that will be executed and we use a Rust base image to build our binary and just move the binary to a Linux image without Rust. 
-
-
-# Contributing
-Contributions are welcome! Feel free to open issues or pull requests for any improvements or bug fixes.
-
-# License
 This project is licensed under the MIT License.

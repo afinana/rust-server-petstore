@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Pet {
-    pub id: u64,
+    pub id: i64,
     pub category: Category,
     pub name: String,
     #[serde(rename = "photoUrls", default)]
@@ -14,15 +14,14 @@ pub struct Pet {
     pub status: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)] // Added `Clone` trait derivation
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Category {
-    pub id: u64,
+    pub id: i64,
     pub name: String,
 }
 
-impl Category {}
-#[derive(Debug, Serialize, Deserialize, Clone)] // Added `Clone` trait derivation
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Tag {
-    pub id: u64,
+    pub id: i64,
     pub name: String,
 }
