@@ -110,3 +110,12 @@ pub async fn logout_user(db: web::Data<db::MongoDb>, query: web::Query<LoginQuer
 }
 
 
+    let result = mongo_db.logout_user(username.as_str()).await;
+    match result {
+        Ok(_) => HttpResponse::Ok().finish(),
+        Err(e) => {
+            log::error!("Failed to logout user: {:?}", e);
+            HttpResponse::InternalServerError().finish()
+        }
+    }
+}
