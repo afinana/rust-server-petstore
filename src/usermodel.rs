@@ -1,10 +1,10 @@
 // usermodel.rs
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone)] // Added `Clone` trait derivation
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct User {
-	pub id: u64,
-	pub username: String,
-	pub email: String,
-	pub password: String,
+    pub id: i64,
+    pub username: String,
+    pub email: String,
+    pub password: String,
 }
