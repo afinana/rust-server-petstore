@@ -42,7 +42,10 @@ pub async fn update_user_by_username(
     }
 }
 
-pub async fn get_user_by_username(db: web::Data<db::MongoDb>, username: web::Path<String>) -> impl Responder {
+pub async fn get_user_by_username(
+    db: web::Data<db::MongoDb>,
+    username: web::Path<String>,
+) -> impl Responder {
     log::info!("Getting user: {}", username);
     match db.get_user_by_username(&username).await {
         Ok(Some(user)) => HttpResponse::Ok().json(user),
@@ -54,7 +57,10 @@ pub async fn get_user_by_username(db: web::Data<db::MongoDb>, username: web::Pat
     }
 }
 
-pub async fn delete_user_by_username(db: web::Data<db::MongoDb>, username: web::Path<String>) -> impl Responder {
+pub async fn delete_user_by_username(
+    db: web::Data<db::MongoDb>,
+    username: web::Path<String>,
+) -> impl Responder {
     log::info!("Deleting user: {}", username);
     match db.delete_user_by_username(&username).await {
         Ok(res) if res.deleted_count > 0 => HttpResponse::Ok().finish(),
@@ -66,7 +72,10 @@ pub async fn delete_user_by_username(db: web::Data<db::MongoDb>, username: web::
     }
 }
 
-pub async fn create_users_with_list(db: web::Data<db::MongoDb>, users: web::Json<Vec<User>>) -> impl Responder {
+pub async fn create_users_with_list(
+    db: web::Data<db::MongoDb>,
+    users: web::Json<Vec<User>>,
+) -> impl Responder {
     log::info!("Creating {} users", users.len());
     for user in users.iter() {
         if let Err(e) = db.add_user(user).await {
@@ -83,7 +92,10 @@ pub struct LoginQuery {
     pub password: Option<String>,
 }
 
-pub async fn login_user(db: web::Data<db::MongoDb>, query: web::Query<LoginQuery>) -> impl Responder {
+pub async fn login_user(
+    db: web::Data<db::MongoDb>,
+    query: web::Query<LoginQuery>,
+) -> impl Responder {
     let username = query.username.as_deref().unwrap_or_default();
     let password = query.password.as_deref().unwrap_or_default();
 
@@ -97,7 +109,10 @@ pub async fn login_user(db: web::Data<db::MongoDb>, query: web::Query<LoginQuery
     }
 }
 
-pub async fn logout_user(db: web::Data<db::MongoDb>, query: web::Query<LoginQuery>) -> impl Responder {
+pub async fn logout_user(
+    db: web::Data<db::MongoDb>,
+    query: web::Query<LoginQuery>,
+) -> impl Responder {
     let username = query.username.as_deref().unwrap_or_default();
     log::info!("Logout for user: {}", username);
     match db.logout_user(username).await {
